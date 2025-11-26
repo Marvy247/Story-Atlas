@@ -1,15 +1,15 @@
-# Story Graph Studio
+# Story Atlas
 
 **Interactive IP Relationship & Lineage Visualizer for Story Protocol**
 
-Story Graph Studio is an open-source developer tool that visualizes the relationships between IP assets on Story Protocol as an interactive, force-directed graph. Built for the Surreal World Assets Buildathon OSS/Dev Tooling track.
+Story Atlas is an open-source developer tool that visualizes the relationships between IP assets on Story Protocol as an interactive, force-directed graph. Built for the Surreal World Assets Buildathon OSS/Dev Tooling track.
 
-![Story Graph Studio](https://img.shields.io/badge/Story%20Protocol-IP%20Explorer-blue)
+![Story Atlas](https://img.shields.io/badge/Story%20Protocol-IP%20Explorer-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-## 🎯 Features
+##  Features
 
 ### Core Visualization
 - **Interactive Force-Directed Graph**: D3-powered visualization showing IP assets and their derivative relationships
@@ -41,7 +41,7 @@ Story Graph Studio is an open-source developer tool that visualizes the relation
 - **SWR Data Fetching**: Optimized caching and revalidation
 - **Recharts Integration**: Beautiful, responsive charts
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 - Node.js 18+ 
@@ -83,7 +83,7 @@ NEXT_PUBLIC_USE_MOCK_DATA=true
 NEXT_PUBLIC_PROJECT_ID=your_project_id
 ```
 
-## 📚 Project Structure
+##  Project Structure
 
 ```
 story-graph-studio/
@@ -101,7 +101,7 @@ story-graph-studio/
 └── public/              # Static assets
 ```
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 - **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript
@@ -113,7 +113,7 @@ story-graph-studio/
 - **Web3**: Wagmi + Viem
 - **Story SDK**: @story-protocol/core-sdk
 
-## 🎨 Graph Visualization
+##  Graph Visualization
 
 ### Node Colors (License Types)
 - 🟢 **Green**: Commercial Remix (commercial use + derivatives allowed)
@@ -130,7 +130,7 @@ story-graph-studio/
 - **Arrows**: Show parent → child derivative relationships
 - **Thickness**: Indicates royalty percentage share
 
-## 📊 Analytics Features
+##  Analytics Features
 
 - Total IP Assets count
 - Total Derivatives created
@@ -165,7 +165,7 @@ npm run lint
 npx tsc --noEmit
 ```
 
-## 🌟 Roadmap
+##  Roadmap
 
 - [ ] Time-travel feature (view graph evolution over time)
 - [ ] 3D graph visualization mode
@@ -176,7 +176,7 @@ npx tsc --noEmit
 - [ ] Predicted licensing opportunities
 - [ ] SVG/PNG export with watermarks
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
@@ -186,35 +186,12 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📝 License
+##  License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🏆 Buildathon Submission
 
-**Track**: OSS / Dev Tooling  
-**Hackathon**: Surreal World Assets Buildathon  
-**Team**: [Your Team Name]  
-**Demo**: [Live Demo URL]  
-**Video**: [Demo Video URL]
-
-### Why Story Graph Studio Wins
-
-1. **Fills Critical Gap**: No existing tool visualizes Story Protocol IP relationships
-2. **Developer Focused**: Built by developers, for developers
-3. **Open Source**: MIT licensed, community-driven
-4. **Production Ready**: Fully functional with real Story Protocol integration
-5. **Visually Stunning**: Beautiful, interactive UI that "wows" judges
-6. **Technically Impressive**: Complex graph algorithms + real-time data
-7. **Ecosystem Value**: Benefits entire Story Protocol community
-
-## 📧 Contact
-
-- **GitHub**: [@yourusername](https://github.com/yourusername)
-- **Twitter**: [@yourhandle](https://twitter.com/yourhandle)
-- **Email**: your.email@example.com
-
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - Story Protocol team for the amazing IP infrastructure
 - Surreal World Assets Buildathon organizers
@@ -223,4 +200,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ for the Story Protocol ecosystem**
+**Built for the Story Protocol Developers**

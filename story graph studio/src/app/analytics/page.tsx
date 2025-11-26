@@ -10,6 +10,8 @@ import IPsOverTime from '@/components/dashboard/IPsOverTime';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { fadeIn, staggerContainer } from '@/lib/animations';
 
 export default function AnalyticsPage() {
   const { assets, isLoading: assetsLoading } = useIPAssets({ limit: 1000 });
@@ -55,9 +57,6 @@ export default function AnalyticsPage() {
                 <h1 className="text-xl font-bold">Analytics Dashboard</h1>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <appkit-button />
-            </div>
           </div>
         </div>
       </header>
@@ -65,14 +64,34 @@ export default function AnalyticsPage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         {isLoading ? (
-          <div className="flex items-center justify-center h-[60vh]">
+          <motion.div 
+            className="flex items-center justify-center h-[60vh]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
             <div className="text-center">
-              <Loader2 className="h-12 w-12 animate-spin text-blue-500 mx-auto mb-4" />
-              <p className="text-zinc-400">Loading analytics data...</p>
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              >
+                <Loader2 className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+              </motion.div>
+              <motion.p 
+                className="text-zinc-400"
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                Loading analytics data...
+              </motion.p>
             </div>
-          </div>
+          </motion.div>
         ) : (
-          <div className="space-y-8">
+          <motion.div 
+            className="space-y-8"
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+          >
             {/* Stats Cards */}
             <section>
               <h2 className="text-2xl font-bold mb-4">Overview</h2>
@@ -132,7 +151,7 @@ export default function AnalyticsPage() {
                 </div>
               </div>
             </section>
-          </div>
+          </motion.div>
         )}
       </main>
     </div>

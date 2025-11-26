@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { headers } from "next/headers";
-import ContextProvider from "../../context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,24 +13,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Story Graph Studio - IP Relationship Explorer",
+  title: "Story Atlas - IP Relationship Explorer",
   description: "Interactive visualization of Story Protocol IP assets, derivatives, and licensing relationships",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const headersObj = await headers();
-  const cookies = headersObj.get('cookie')
-
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ContextProvider cookies={cookies}>{children}</ContextProvider>
+        {children}
       </body>
     </html>
   );

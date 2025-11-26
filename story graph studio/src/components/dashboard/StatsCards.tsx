@@ -3,6 +3,8 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { TrendingUp, Network, GitBranch, Coins, Users, Zap } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { staggerContainer, staggerItem } from '@/lib/animations';
 
 interface StatsCardsProps {
   stats: {
@@ -62,23 +64,46 @@ export default function StatsCards({ stats }: StatsCardsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+    <motion.div 
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+    >
       {cards.map((card, index) => (
-        <Card
+        <motion.div
           key={index}
-          className="bg-zinc-900 border-zinc-800 p-6 hover:bg-zinc-800/50 transition-colors"
+          variants={staggerItem}
+          whileHover={{ 
+            scale: 1.02,
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
+          }}
+          transition={{ duration: 0.2 }}
         >
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-zinc-400 mb-2">{card.title}</p>
-              <p className="text-3xl font-bold text-white">{card.value}</p>
+          <Card className="bg-zinc-900 border-zinc-800 p-6 transition-colors h-full">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-zinc-400 mb-2">{card.title}</p>
+                <motion.p 
+                  className="text-3xl font-bold text-white"
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.3 + index * 0.1, duration: 0.5 }}
+                >
+                  {card.value}
+                </motion.p>
+              </div>
+              <motion.div 
+                className={`p-3 rounded-lg ${card.bgColor}`}
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.6 }}
+              >
+                <card.icon className={`h-6 w-6 ${card.color}`} />
+              </motion.div>
             </div>
-            <div className={`p-3 rounded-lg ${card.bgColor}`}>
-              <card.icon className={`h-6 w-6 ${card.color}`} />
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }

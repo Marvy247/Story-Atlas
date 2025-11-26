@@ -1,10 +1,20 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import ForceGraph2D from 'react-force-graph-2d';
+import dynamic from 'next/dynamic';
 import { GraphData, GraphNode, GraphEdge } from '@/lib/story-protocol/types';
 import { useGraphStore } from '@/stores/graphStore';
 import { getNodeColor, getNodeSize } from '@/lib/graph/graph-builder';
+
+// Dynamically import ForceGraph2D to avoid SSR issues
+const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center w-full h-full">
+      <div className="text-zinc-400">Loading graph...</div>
+    </div>
+  ),
+});
 
 interface ForceGraphProps {
   data: GraphData;

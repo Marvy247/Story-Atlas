@@ -8,6 +8,8 @@ import { X, ExternalLink, Copy, Check } from 'lucide-react';
 import { useGraphStore } from '@/stores/graphStore';
 import { EXPLORER_URL } from '@/lib/story-protocol/client';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { slideInRight } from '@/lib/animations';
 
 interface NodeDetailsProps {
   node: GraphNode;
@@ -36,8 +38,16 @@ export default function NodeDetails({ node }: NodeDetailsProps) {
   };
 
   return (
-    <Card className="fixed right-6 top-6 w-96 max-h-[80vh] overflow-y-auto bg-zinc-900 border-zinc-800 text-white z-50">
-      <div className="p-6">
+    <AnimatePresence>
+      <motion.div
+        variants={slideInRight}
+        initial="hidden"
+        animate="visible"
+        exit="hidden"
+        className="fixed right-6 top-6 w-96 max-h-[80vh] overflow-y-auto z-50"
+      >
+        <Card className="bg-zinc-900 border-zinc-800 text-white">
+          <div className="p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
@@ -161,7 +171,9 @@ export default function NodeDetails({ node }: NodeDetailsProps) {
             </a>
           </Button>
         </div>
-      </div>
-    </Card>
+          </div>
+        </Card>
+      </motion.div>
+    </AnimatePresence>
   );
 }

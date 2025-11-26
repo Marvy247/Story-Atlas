@@ -3,6 +3,8 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { motion } from 'framer-motion';
+import { fadeInUp } from '@/lib/animations';
 
 interface MediaTypeChartProps {
   data: { [key: string]: number };
@@ -15,8 +17,13 @@ export default function MediaTypeChart({ data }: MediaTypeChartProps) {
   }));
 
   return (
-    <Card className="bg-zinc-900 border-zinc-800 p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">Media Type Distribution</h3>
+    <motion.div
+      variants={fadeInUp}
+      initial="hidden"
+      animate="visible"
+    >
+      <Card className="bg-zinc-900 border-zinc-800 p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Media Type Distribution</h3>
       
       {chartData.length > 0 ? (
         <ResponsiveContainer width="100%" height={300}>
@@ -47,6 +54,7 @@ export default function MediaTypeChart({ data }: MediaTypeChartProps) {
           No data available
         </div>
       )}
-    </Card>
+      </Card>
+    </motion.div>
   );
 }

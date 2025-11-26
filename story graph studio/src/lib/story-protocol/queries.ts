@@ -21,25 +21,58 @@ export async function fetchIPAssets(params?: {
   }
   
   try {
-    const queryParams = new URLSearchParams({
-      pagination: JSON.stringify({
-        limit: params?.limit || 100,
-        offset: params?.offset || 0,
-      }),
-      ...(params?.orderBy && {
-        orderBy: params.orderBy,
-        orderDirection: params.orderDirection || 'desc',
+    // Real Story Protocol API call with v4 format (correct format)
+    const result = await fetchFromStoryAPI('/assets', {
+      method: 'POST',
+      body: JSON.stringify({
+        includeLicenses: true,
+        moderated: false,
+        orderBy: params?.orderBy || 'blockTimestamp',
+        orderDirection: params?.orderDirection || 'desc',
+        pagination: {
+          limit: params?.limit || 100,
+          offset: params?.offset || 0,
+        },
       }),
     });
 
-    const result = await fetchFromStoryAPI(`/assets?${queryParams}`);
+    // Map the real API response to our interface
+    const assets: IPAsset[] = (result.data || []).map((asset: any) => ({
+      id: asset.id,
+      ipId: asset.ipId,
+      tokenContract: asset.nftMetadata?.tokenContract || asset.tokenContract,
+      tokenId: asset.nftMetadata?.tokenId || asset.tokenId,
+      chainId: asset.chainId || 1513,
+      owner: asset.owner,
+      blockNumber: asset.blockNumber,
+      blockTimestamp: asset.blockTimestamp,
+      metadata: asset.nftMetadata ? {
+        name: asset.nftMetadata.name,
+        description: asset.nftMetadata.description,
+        mediaType: asset.nftMetadata.mediaType,
+        imageUrl: asset.nftMetadata.imageUrl,
+      } : undefined,
+      licenseTerms: asset.licenseTerms || [],
+      parents: asset.ancestorIpIds || [],
+      children: asset.childIpIds || [],
+      totalRevenue: asset.totalRevenue || '0',
+    }));
+
     return {
-      data: result.data || [],
-      total: result.total || 0,
+      data: assets,
+      total: result.pagination?.total || assets.length,
     };
   } catch (error) {
     console.error('Error fetching IP assets:', error);
-    return { data: [], total: 0 };
+    // Fallback to mock data on error
+    console.warn('Falling back to mock data due to API error');
+    const mockData = getMockIPAssets();
+    const start = params?.offset || 0;
+    const end = start + (params?.limit || 100);
+    return {
+      data: mockData.slice(start, end),
+      total: mockData.length,
+    };
   }
 }
 
@@ -80,15 +113,55 @@ export async function fetchIPLicenses(ipId: string) {
 }
 
 export async function searchIPAssets(query: string, limit = 20): Promise<IPAsset[]> {
+  // Use mock data for development
+  if (useMockData) {
+    const mockData = getMockIPAssets();
+    const lowerQuery = query.toLowerCase();
+    return mockData.filter(asset => 
+      asset.metadata?.name?.toLowerCase().includes(lowerQuery) ||
+      asset.ipId.toLowerCase().includes(lowerQuery) ||
+      asset.owner.toLowerCase().includes(lowerQuery)
+    ).slice(0, limit);
+  }
+
   try {
-    const result = await fetchFromStoryAPI('/search', {
+    // Real Story Protocol search API
+    const result = await fetchFromStoryAPI('/assets/search', {
       method: 'POST',
       body: JSON.stringify({
         query,
-        pagination: { limit, offset: 0 },
+        includeLicenses: true,
+        moderated: false,
+        pagination: { 
+          limit, 
+          offset: 0 
+        },
       }),
     });
-    return result.data || [];
+
+    // Map search results to IPAsset format
+    const assets: IPAsset[] = (result.data || []).map((asset: any) => ({
+      id: asset.id,
+      ipId: asset.ipId,
+      tokenContract: asset.nftMetadata?.tokenContract || asset.tokenContract,
+      tokenId: asset.nftMetadata?.tokenId || asset.tokenId,
+      chainId: asset.chainId || 1513,
+      owner: asset.owner,
+      blockNumber: asset.blockNumber,
+      blockTimestamp: asset.blockTimestamp,
+      metadata: asset.nftMetadata ? {
+        name: asset.nftMetadata.name,
+        description: asset.nftMetadata.description,
+        mediaType: asset.nftMetadata.mediaType,
+        imageUrl: asset.nftMetadata.imageUrl,
+      } : undefined,
+      licenseTerms: asset.licenseTerms || [],
+      parents: asset.ancestorIpIds || [],
+      children: asset.childIpIds || [],
+      totalRevenue: asset.totalRevenue || '0',
+    }));
+
+    return assets;
   } catch (error) {
     console.error('Error searching IP assets:', error);
     return [];

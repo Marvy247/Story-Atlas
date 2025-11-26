@@ -1,6 +1,4 @@
 // Story Protocol SDK Client Setup
-import { StoryClient, StoryConfig } from '@story-protocol/core-sdk';
-import { http } from 'viem';
 import { defineChain } from 'viem';
 
 // Define Story Odyssey chain
@@ -17,18 +15,11 @@ export const odyssey = defineChain({
   testnet: true,
 });
 
-// Story Protocol configuration
-const config: StoryConfig = {
-  account: process.env.NEXT_PUBLIC_WALLET_PRIVATE_KEY as `0x${string}` | undefined,
-  transport: http(process.env.NEXT_PUBLIC_RPC_URL || 'https://odyssey.storyrpc.io'),
-  chainId: 'odyssey' as any, // Odyssey testnet
-};
+// Note: We use the REST API directly via fetchFromStoryAPI instead of the SDK client
+// This avoids chainId compatibility issues and works better for our use case
 
-// Initialize Story Client (conditional to avoid build errors if env vars not set)
-export const storyClient = typeof window !== 'undefined' ? StoryClient.newClient(config) : null;
-
-// API endpoints
-export const STORY_API_BASE_URL = process.env.NEXT_PUBLIC_STORY_API_URL || 'https://api.story.foundation/api/v1';
+// API endpoints - Updated to real Story Protocol API
+export const STORY_API_BASE_URL = process.env.NEXT_PUBLIC_STORY_API_URL || 'https://api.storyapis.com/api/v4';
 
 // Helper to fetch from Story API
 export async function fetchFromStoryAPI(endpoint: string, options?: RequestInit) {
