@@ -55,6 +55,7 @@ export interface GraphNode {
   owner: string;
   timestamp: number;
   mediaType?: string;
+  imageUrl?: string;
   licenseType: string;
   derivativeCount: number;
   parentCount: number;

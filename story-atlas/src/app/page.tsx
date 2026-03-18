@@ -15,8 +15,8 @@ import NetworkInsights from '@/components/graph/NetworkInsights';
 import SearchBar from '@/components/search/SearchBar';
 import FilterPanel from '@/components/search/FilterPanel';
 import ActiveFilters from '@/components/search/ActiveFilters';
-import { useEffect, useState, useMemo } from 'react';
-import { Loader2, BarChart3, GitBranch, Clock } from 'lucide-react';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { BarChart3, GitBranch, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -41,6 +41,18 @@ export default function Home() {
   const { assets, hasMore, loadMore } = useIPAssets();
   const { graphData, metrics, isLoading, isError } = useGraphData(filters);
   const { selectedNode } = useGraphStore();
+  const fgRef = useRef<{ centerAt: (x: number, y: number, ms: number) => void; zoom: (k: number, ms: number) => void } | null>(null);
+
+  // Escape key to deselect node
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        useGraphStore.setState({ selectedNode: null, highlightedNodes: new Set() });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   
   // Phase 5A: Advanced Features State
   const [showGenealogyTree, setShowGenealogyTree] = useState(false);
@@ -160,10 +172,14 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <SearchBar 
               onSelectIP={(ipId) => {
-                // Find and select the node in the graph
                 const node = graphData.nodes.find(n => n.ipId === ipId);
                 if (node) {
                   useGraphStore.setState({ selectedNode: node });
+                  // Zoom to node
+                  if (fgRef.current && node.x != null && node.y != null) {
+                    fgRef.current.centerAt(node.x, node.y, 600);
+                    fgRef.current.zoom(4, 600);
+                  }
                 }
               }}
             />
@@ -183,20 +199,31 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <div className="text-center">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              >
-                <Loader2 className="h-12 w-12 text-blue-500 mx-auto mb-4" />
-              </motion.div>
-              <motion.p 
-                className="text-zinc-400"
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                Loading IP assets from Story Protocol...
-              </motion.p>
+            <div className="text-center space-y-4">
+              {/* Skeleton graph */}
+              <div className="relative w-64 h-64 mx-auto">
+                {[...Array(6)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute rounded-full bg-zinc-800 animate-pulse"
+                    style={{
+                      width: `${20 + Math.random() * 20}px`,
+                      height: `${20 + Math.random() * 20}px`,
+                      left: `${10 + (i % 3) * 35}%`,
+                      top: `${10 + Math.floor(i / 3) * 45}%`,
+                      animationDelay: `${i * 0.15}s`,
+                    }}
+                  />
+                ))}
+                {/* Skeleton edges */}
+                <svg className="absolute inset-0 w-full h-full opacity-20">
+                  <line x1="20%" y1="25%" x2="55%" y2="25%" stroke="#52525b" strokeWidth="1" />
+                  <line x1="55%" y1="25%" x2="90%" y2="25%" stroke="#52525b" strokeWidth="1" />
+                  <line x1="20%" y1="70%" x2="55%" y2="25%" stroke="#52525b" strokeWidth="1" />
+                  <line x1="90%" y1="70%" x2="55%" y2="25%" stroke="#52525b" strokeWidth="1" />
+                </svg>
+              </div>
+              <p className="text-zinc-400 text-sm animate-pulse">Loading IP assets from Story Protocol...</p>
             </div>
           </motion.div>
         ) : isError ? (
@@ -219,6 +246,7 @@ export default function Home() {
               data={filteredByDate} 
               width={dimensions.width}
               height={dimensions.height}
+              fgRef={fgRef}
             />
             <NetworkInsights graphData={filteredByDate} />
             <LegendPanel />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { GraphData, GraphNode } from '@/lib/story-protocol/types';
 import { useGraphStore } from '@/stores/graphStore';
@@ -15,25 +15,48 @@ interface ForceGraphProps {
   data: GraphData;
   width?: number;
   height?: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  fgRef?: React.RefObject<any>;
 }
 
-export default function ForceGraph({ data, width = 800, height = 600 }: ForceGraphProps) {
+// Cache for loaded node images
+const imageCache = new Map<string, HTMLImageElement>();
+
+function loadImage(url: string): Promise<HTMLImageElement> {
+  if (imageCache.has(url)) return Promise.resolve(imageCache.get(url)!);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => { imageCache.set(url, img); resolve(img); };
+    img.onerror = () => resolve(img); // resolve anyway, draw fallback
+    img.src = url;
+  });
+}
+
+export default function ForceGraph({ data, width = 800, height = 600, fgRef: externalRef }: ForceGraphProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(null);
 
-  // Use refs for store values so callbacks don't change identity on every render
+  // Keep external ref in sync every render
+  useEffect(() => {
+    if (externalRef && fgRef.current) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (externalRef as React.MutableRefObject<any>).current = fgRef.current;
+    }
+  });
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; node: GraphNode } | null>(null);
+
   const selectedNodeRef = useRef<GraphNode | null>(null);
   const highlightedNodesRef = useRef<Set<string>>(new Set());
-
   const { selectedNode, setSelectedNode, setHoveredNode, highlightedNodes } = useGraphStore();
 
   useEffect(() => { selectedNodeRef.current = selectedNode; }, [selectedNode]);
   useEffect(() => { highlightedNodesRef.current = highlightedNodes; }, [highlightedNodes]);
 
-  // Stable refs — never change identity so callbacks and simulation never reset
   const graphDataRef = useRef({ nodes: data.nodes, links: data.edges });
   const dataRef = useRef(data);
   const setSelectedNodeRef = useRef(setSelectedNode);
+
   useEffect(() => {
     graphDataRef.current.nodes = data.nodes;
     graphDataRef.current.links = data.edges;
@@ -41,6 +64,14 @@ export default function ForceGraph({ data, width = 800, height = 600 }: ForceGra
     setSelectedNodeRef.current = setSelectedNode;
     fgRef.current?.d3ReheatSimulation?.();
   }, [data, setSelectedNode]);
+
+  // Preload images for visible nodes
+  useEffect(() => {
+    data.nodes.forEach(node => {
+      const url = (node as GraphNode & { imageUrl?: string }).imageUrl;
+      if (url) loadImage(url);
+    });
+  }, [data.nodes]);
 
   const handleNodeClick = useCallback((node: GraphNode) => {
     setSelectedNodeRef.current(node);
@@ -52,11 +83,17 @@ export default function ForceGraph({ data, width = 800, height = 600 }: ForceGra
       if (tgt === node.id) ids.add(src);
     });
     useGraphStore.setState({ highlightedNodes: ids });
+    setTooltip(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleNodeHover = useCallback((node: GraphNode | null) => {
+  const handleNodeHover = useCallback((node: GraphNode | null, _prev: GraphNode | null, event?: MouseEvent) => {
     setHoveredNode(node);
+    if (node && event) {
+      setTooltip({ x: event.clientX, y: event.clientY, node });
+    } else {
+      setTooltip(null);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -72,20 +109,43 @@ export default function ForceGraph({ data, width = 800, height = 600 }: ForceGra
     const isSelected = selectedNodeRef.current?.id === node.id;
     const x = node.x ?? 0;
     const y = node.y ?? 0;
+    const color = getNodeColor(node);
+    const imageUrl = (node as GraphNode & { imageUrl?: string }).imageUrl;
+
+    // Glow for selected
+    if (isSelected) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 15 / globalScale;
+    }
 
     // Draw circle
     ctx.beginPath();
     ctx.arc(x, y, nodeSize, 0, 2 * Math.PI);
-    ctx.fillStyle = getNodeColor(node);
+    ctx.fillStyle = color;
     ctx.fill();
+    ctx.shadowBlur = 0;
 
+    // Draw image thumbnail inside circle
+    const img = imageUrl ? imageCache.get(imageUrl) : null;
+    if (img && img.complete && img.naturalWidth > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, nodeSize - 0.5, 0, 2 * Math.PI);
+      ctx.clip();
+      ctx.drawImage(img, x - nodeSize, y - nodeSize, nodeSize * 2, nodeSize * 2);
+      ctx.restore();
+    }
+
+    // Border
     if (isSelected || isHighlighted) {
       ctx.strokeStyle = isSelected ? '#ffffff' : 'rgba(255,255,255,0.5)';
-      ctx.lineWidth = (isSelected ? 3 : 1.5) / globalScale;
+      ctx.lineWidth = (isSelected ? 2.5 : 1.5) / globalScale;
+      ctx.beginPath();
+      ctx.arc(x, y, nodeSize, 0, 2 * Math.PI);
       ctx.stroke();
     }
 
-    // Label — scales with zoom like the nodes do
+    // Label — scales with zoom
     ctx.font = `3px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
@@ -135,28 +195,44 @@ export default function ForceGraph({ data, width = 800, height = 600 }: ForceGra
           <p className="text-zinc-400">No IP assets to display</p>
         </div>
       ) : (
-        <ForceGraph2D
-          ref={fgRef}
-          graphData={graphDataRef.current}
-          width={width}
-          height={height}
-          backgroundColor="#09090b"
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          nodeCanvasObject={nodeCanvasObject as any}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          linkCanvasObject={linkCanvasObject as any}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          onNodeClick={handleNodeClick as any}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          onNodeHover={handleNodeHover as any}
-          onBackgroundClick={handleBackgroundClick}
-          cooldownTicks={100}
-          d3AlphaDecay={0.02}
-          d3VelocityDecay={0.3}
-          enableNodeDrag={true}
-          enableZoomInteraction={true}
-          enablePanInteraction={true}
-        />
+        <>
+          <ForceGraph2D
+            ref={fgRef}
+            graphData={graphDataRef.current}
+            width={width}
+            height={height}
+            backgroundColor="#09090b"
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            nodeCanvasObject={nodeCanvasObject as any}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            linkCanvasObject={linkCanvasObject as any}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onNodeClick={handleNodeClick as any}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onNodeHover={handleNodeHover as any}
+            onBackgroundClick={handleBackgroundClick}
+            cooldownTicks={100}
+            d3AlphaDecay={0.02}
+            d3VelocityDecay={0.3}
+            enableNodeDrag={true}
+            enableZoomInteraction={true}
+            enablePanInteraction={true}
+          />
+
+          {/* Hover Tooltip */}
+          {tooltip && (
+            <div
+              className="fixed z-50 pointer-events-none bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 shadow-xl text-sm"
+              style={{ left: tooltip.x + 12, top: tooltip.y - 40 }}
+            >
+              <p className="font-semibold text-white">{tooltip.node.name}</p>
+              <p className="text-zinc-400 text-xs mt-0.5">
+                {tooltip.node.licenseType} · {tooltip.node.derivativeCount} derivatives
+              </p>
+              <p className="text-zinc-500 text-xs">{tooltip.node.owner.slice(0, 6)}…{tooltip.node.owner.slice(-4)}</p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

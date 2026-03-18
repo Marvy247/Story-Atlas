@@ -50,9 +50,20 @@ export default function NodeDetails({ node }: NodeDetailsProps) {
           <div className="p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <h2 className="text-xl font-bold mb-1">{node.name}</h2>
-            <p className="text-sm text-zinc-400">{node.mediaType || 'Unknown type'}</p>
+          <div className="flex items-start gap-3 flex-1">
+            {/* NFT Thumbnail */}
+            {(node as GraphNode & { imageUrl?: string }).imageUrl && (
+              <img
+                src={(node as GraphNode & { imageUrl?: string }).imageUrl}
+                alt={node.name}
+                className="w-14 h-14 rounded-lg object-cover flex-shrink-0 border border-zinc-700"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-bold mb-1 truncate">{node.name}</h2>
+              <p className="text-sm text-zinc-400">{node.mediaType || 'Unknown type'}</p>
+            </div>
           </div>
           <Button
             variant="ghost"

@@ -15,6 +15,7 @@ export function buildGraphData(assets: IPAsset[]): GraphData {
       owner: asset.owner,
       timestamp: asset.blockTimestamp,
       mediaType: asset.metadata?.mediaType,
+      imageUrl: asset.metadata?.imageUrl,
       licenseType: getLicenseType(asset),
       derivativeCount: asset.children?.length || 0,
       parentCount: asset.parents?.length || 0,
