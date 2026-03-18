@@ -146,7 +146,7 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
     }
 
     // Label — scales with zoom
-    ctx.font = `3px sans-serif`;
+    ctx.font = `5px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
