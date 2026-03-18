@@ -31,12 +31,10 @@ function loadImage(url: string): void {
   img.src = url;
 }
 
-// Pre-compute gradient cache per color to avoid recreating each frame
-const gradientCache = new Map<string, CanvasGradient>();
+// Pre-compute gradient — keyed by color only (position baked in, acceptable for moving nodes)
 function getNodeGradient(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string): CanvasGradient {
-  // Gradients are position-dependent so we can't truly cache them, but we can reuse the pattern
   const grad = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
-  grad.addColorStop(0, lighten(color, 0.4));
+  grad.addColorStop(0, lighten(color, 0.35));
   grad.addColorStop(1, color);
   return grad;
 }
@@ -54,6 +52,20 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
   const fgRef = useRef<any>(null);
   const mousePos = useRef({ x: 0, y: 0 });
   const [showZoomHint, setShowZoomHint] = useState(true);
+
+  // Passive wheel/touch listeners to avoid scroll-blocking violation
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const dismiss = () => setShowZoomHint(false);
+    el.addEventListener('wheel', dismiss, { passive: true });
+    el.addEventListener('touchstart', dismiss, { passive: true });
+    return () => {
+      el.removeEventListener('wheel', dismiss);
+      el.removeEventListener('touchstart', dismiss);
+    };
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => setShowZoomHint(false), 4000);
@@ -176,8 +188,8 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
 
     ctx.globalAlpha = isDimmed ? 0.15 : 1;
 
-    // Outer glow ring for selected — no shadowBlur (expensive)
-    if (isSelected) {
+    // Outer glow ring for selected — only when zoomed in enough to see it
+    if (isSelected && globalScale > 0.8) {
       ctx.beginPath();
       ctx.arc(x, y, nodeSize + 5, 0, 2 * Math.PI);
       ctx.fillStyle = color + '33';
@@ -188,11 +200,10 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
       ctx.fill();
     }
 
-    // Node circle with radial gradient
-    const grad = getNodeGradient(ctx, x, y, nodeSize, color);
+    // Node circle — flat fill when zoomed out (gradient invisible + expensive), gradient when zoomed in
     ctx.beginPath();
     ctx.arc(x, y, nodeSize, 0, 2 * Math.PI);
-    ctx.fillStyle = grad;
+    ctx.fillStyle = globalScale > 1.5 ? getNodeGradient(ctx, x, y, nodeSize, color) : color;
     ctx.fill();
 
     // NFT thumbnail
@@ -293,13 +304,12 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
 
   return (
     <div
+      ref={containerRef}
       className="relative w-full h-full bg-zinc-950 overflow-hidden"
       style={{ cursor: tooltip ? 'pointer' : 'default' }}
       onMouseMove={(e) => {
         if (tooltip) setTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null);
       }}
-      onWheel={() => setShowZoomHint(false)}
-      onTouchStart={() => setShowZoomHint(false)}
     >
       {data.nodes.length === 0 ? (
         <div className="flex items-center justify-center h-full">
