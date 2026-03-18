@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { GraphData, GraphNode } from '@/lib/story-protocol/types';
 import { useGraphStore } from '@/stores/graphStore';
@@ -27,7 +27,12 @@ export default function ForceGraph({ data, width = 800, height = 600 }: ForceGra
   const fgRef = useRef<any>(null);
   const { selectedNode, setSelectedNode, setHoveredNode, highlightedNodes } = useGraphStore();
 
-  const graphData = { nodes: data.nodes, links: data.edges };
+  // Stable ref so ForceGraph2D never gets a new object — prevents simulation reset on re-render
+  const graphDataRef = useRef({ nodes: data.nodes, links: data.edges });
+  useEffect(() => {
+    graphDataRef.current.nodes = data.nodes;
+    graphDataRef.current.links = data.edges;
+  }, [data.nodes, data.edges]);
 
   // Handle node click
   const handleNodeClick = (node: GraphNode) => {
@@ -143,7 +148,7 @@ export default function ForceGraph({ data, width = 800, height = 600 }: ForceGra
       ) : (
         <ForceGraph2D
           ref={fgRef}
-          graphData={graphData}
+          graphData={graphDataRef.current}
           width={width}
           height={height}
           backgroundColor="#09090b"

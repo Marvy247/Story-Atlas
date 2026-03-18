@@ -13,13 +13,24 @@ export function useGraphData(filters?: FilterOptions) {
   const { data: edges = [], isLoading: edgesLoading } = useSWR(
     'ip-edges',
     () => fetchIPEdges({ limit: 500 }),
-    { revalidateOnFocus: false, dedupingInterval: 60000 }
+    {
+      revalidateOnFocus: false,
+      revalidateIfStale: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 300000,
+    }
   );
+
+  // Destructure filter primitives so useMemo only recomputes when values change
+  const searchQuery = filters?.searchQuery;
+  const licenseTypes = filters?.licenseTypes;
+  const mediaTypes = filters?.mediaTypes;
+  const commercialOnly = filters?.commercialOnly;
+  const hasDerivatives = filters?.hasDerivatives;
 
   const graphData = useMemo(() => {
     if (!assets || assets.length === 0) return { nodes: [], edges: [] };
 
-    // Attach parent/child arrays from edges
     const parentMap = new Map<string, string[]>();
     const childMap = new Map<string, string[]>();
     edges.forEach(e => {
@@ -36,8 +47,14 @@ export function useGraphData(filters?: FilterOptions) {
     }));
 
     const fullGraph = buildGraphData(enriched);
-    return filters ? filterGraphData(fullGraph, filters) : fullGraph;
-  }, [assets, edges, filters]);
+
+    if (!searchQuery && !licenseTypes?.length && !mediaTypes?.length && !commercialOnly && !hasDerivatives) {
+      return fullGraph;
+    }
+
+    return filterGraphData(fullGraph, { searchQuery, licenseTypes, mediaTypes, commercialOnly, hasDerivatives });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assets, edges, searchQuery, licenseTypes?.join(','), mediaTypes?.join(','), commercialOnly, hasDerivatives]);
 
   const metrics = useMemo(() => calculateGraphMetrics(graphData), [graphData]);
 

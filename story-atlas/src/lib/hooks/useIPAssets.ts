@@ -13,7 +13,12 @@ export function useIPAssets() {
   const { data, error, isLoading, size, setSize } = useSWRInfinite(
     getKey,
     ([, page]) => fetchIPAssets({ limit: PAGE_SIZE, offset: (page as number) * PAGE_SIZE }),
-    { revalidateOnFocus: false, dedupingInterval: 60000 }
+    {
+      revalidateOnFocus: false,
+      revalidateIfStale: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 300000, // 5 minutes
+    }
   );
 
   const assets = data ? data.flatMap(d => d.data) : [];
