@@ -36,6 +36,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 export default function ForceGraph({ data, width = 800, height = 600, fgRef: externalRef }: ForceGraphProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(null);
+  const mousePos = useRef({ x: 0, y: 0 });
 
   // Keep external ref in sync every render
   useEffect(() => {
@@ -44,6 +45,14 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
       (externalRef as React.MutableRefObject<any>).current = fgRef.current;
     }
   });
+
+  // Track mouse position for tooltip placement
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => { mousePos.current = { x: e.clientX, y: e.clientY }; };
+    window.addEventListener('mousemove', onMove);
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
+
   const [tooltip, setTooltip] = useState<{ x: number; y: number; node: GraphNode } | null>(null);
 
   const selectedNodeRef = useRef<GraphNode | null>(null);
@@ -87,10 +96,10 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleNodeHover = useCallback((node: GraphNode | null, _prev: GraphNode | null, event?: MouseEvent) => {
+  const handleNodeHover = useCallback((node: GraphNode | null) => {
     setHoveredNode(node);
-    if (node && event) {
-      setTooltip({ x: event.clientX, y: event.clientY, node });
+    if (node) {
+      setTooltip({ x: mousePos.current.x, y: mousePos.current.y, node });
     } else {
       setTooltip(null);
     }
@@ -189,7 +198,12 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
   }, []);
 
   return (
-    <div className="relative w-full h-full bg-zinc-950 rounded-lg overflow-hidden border border-zinc-800">
+    <div
+      className="relative w-full h-full bg-zinc-950 rounded-lg overflow-hidden border border-zinc-800"
+      onMouseMove={(e) => {
+        if (tooltip) setTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null);
+      }}
+    >
       {data.nodes.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <p className="text-zinc-400">No IP assets to display</p>
