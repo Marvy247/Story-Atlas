@@ -187,8 +187,7 @@ export function getNodeColor(node: GraphNode): string {
 }
 
 export function getNodeSize(node: GraphNode): number {
-  // Size based on derivative count
-  const baseSize = 5;
-  const scaleFactor = 2;
+  const baseSize = 10;
+  const scaleFactor = 4;
   return baseSize + Math.log(node.derivativeCount + 1) * scaleFactor;
 }
