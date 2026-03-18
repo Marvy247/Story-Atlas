@@ -61,12 +61,9 @@ export default function Home() {
   
   // Date range for time travel
   const dateRange = useMemo(() => {
-    if (assets.length === 0) return { min: INITIAL_NOW, max: INITIAL_NOW };
-    const timestamps = assets.map(a => a.blockTimestamp);
-    return {
-      min: Math.min(...timestamps),
-      max: Math.max(...timestamps),
-    };
+    const timestamps = assets.map(a => a.blockTimestamp).filter((t): t is number => !!t);
+    if (!timestamps.length) return { min: INITIAL_NOW, max: INITIAL_NOW };
+    return { min: Math.min(...timestamps), max: Math.max(...timestamps) };
   }, [assets]);
   
   const [currentDateOverride, setCurrentDateOverride] = useState<number | null>(null);

@@ -112,9 +112,9 @@ export default function TimeTravelSlider({
                 {/* Slider Input */}
                 <input
                   type="range"
-                  min={minDate}
-                  max={maxDate}
-                  value={currentDate}
+                  min={minDate || 0}
+                  max={maxDate || 0}
+                  value={currentDate || 0}
                   onChange={(e) => onDateChange(Number(e.target.value))}
                   className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
                 />
