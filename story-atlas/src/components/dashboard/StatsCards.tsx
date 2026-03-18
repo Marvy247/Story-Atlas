@@ -10,7 +10,6 @@ interface StatsCardsProps {
   stats: {
     totalIPs: number;
     totalDerivatives: number;
-    totalRevenue: string;
     avgDerivativesPerIP: number;
     commercialIPs: number;
     activeCreators: number;
@@ -19,48 +18,12 @@ interface StatsCardsProps {
 
 export default function StatsCards({ stats }: StatsCardsProps) {
   const cards = [
-    {
-      title: 'Total IP Assets',
-      value: stats.totalIPs.toLocaleString(),
-      icon: Network,
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-500/10',
-    },
-    {
-      title: 'Total Derivatives',
-      value: stats.totalDerivatives.toLocaleString(),
-      icon: GitBranch,
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/10',
-    },
-    {
-      title: 'Total Revenue',
-      value: `${parseFloat(stats.totalRevenue).toFixed(2)} IP`,
-      icon: Coins,
-      color: 'text-green-400',
-      bgColor: 'bg-green-500/10',
-    },
-    {
-      title: 'Avg Derivatives/IP',
-      value: stats.avgDerivativesPerIP.toFixed(1),
-      icon: TrendingUp,
-      color: 'text-amber-400',
-      bgColor: 'bg-amber-500/10',
-    },
-    {
-      title: 'Commercial IPs',
-      value: stats.commercialIPs.toLocaleString(),
-      icon: Zap,
-      color: 'text-cyan-400',
-      bgColor: 'bg-cyan-500/10',
-    },
-    {
-      title: 'Active Creators',
-      value: stats.activeCreators.toLocaleString(),
-      icon: Users,
-      color: 'text-pink-400',
-      bgColor: 'bg-pink-500/10',
-    },
+    { title: 'Total IP Assets', value: stats.totalIPs.toLocaleString(), icon: Network, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
+    { title: 'Total Derivatives', value: stats.totalDerivatives.toLocaleString(), icon: GitBranch, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
+    { title: 'Avg Derivatives/IP', value: stats.avgDerivativesPerIP.toFixed(2), icon: TrendingUp, color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
+    { title: 'Commercial IPs', value: stats.commercialIPs.toLocaleString(), icon: Zap, color: 'text-cyan-400', bgColor: 'bg-cyan-500/10' },
+    { title: 'Active Creators', value: stats.activeCreators.toLocaleString(), icon: Users, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
+    { title: 'Remix Rate', value: `${stats.totalIPs > 0 ? ((stats.totalDerivatives / stats.totalIPs) * 100).toFixed(1) : 0}%`, icon: Coins, color: 'text-green-400', bgColor: 'bg-green-500/10' },
   ];
 
   return (

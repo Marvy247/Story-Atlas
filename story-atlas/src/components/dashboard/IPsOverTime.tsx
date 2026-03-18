@@ -12,32 +12,32 @@ interface IPsOverTimeProps {
 export default function IPsOverTime({ assets }: IPsOverTimeProps) {
   // Group assets by date
   const groupByDate = () => {
-    const grouped = new Map<string, number>();
-    
+    // Group by actual timestamp (week buckets for readability)
+    const grouped = new Map<number, { label: string; count: number }>();
+
     assets.forEach(asset => {
-      const date = new Date(asset.blockTimestamp * 1000);
-      const dateKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      grouped.set(dateKey, (grouped.get(dateKey) || 0) + 1);
+      if (!asset.blockTimestamp) return;
+      // Bucket by day
+      const day = Math.floor(asset.blockTimestamp / 86400) * 86400;
+      if (!grouped.has(day)) {
+        const date = new Date(day * 1000);
+        grouped.set(day, {
+          label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          count: 0,
+        });
+      }
+      grouped.get(day)!.count++;
     });
 
-    // Convert to array and sort by date
+    // Sort by timestamp (numeric key)
     const sorted = Array.from(grouped.entries())
-      .map(([date, count]) => ({ date, count }))
-      .sort((a, b) => {
-        const dateA = new Date(a.date + ', 2024');
-        const dateB = new Date(b.date + ', 2024');
-        return dateA.getTime() - dateB.getTime();
-      });
+      .sort((a, b) => a[0] - b[0])
+      .map(([, v]) => v);
 
-    // Calculate cumulative
     let cumulative = 0;
     return sorted.map(item => {
       cumulative += item.count;
-      return {
-        date: item.date,
-        daily: item.count,
-        total: cumulative,
-      };
+      return { date: item.label, daily: item.count, total: cumulative };
     });
   };
 
