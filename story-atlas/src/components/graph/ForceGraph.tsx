@@ -37,6 +37,7 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(null);
   const mousePos = useRef({ x: 0, y: 0 });
+  const [showZoomHint, setShowZoomHint] = useState(true);
 
   // Keep external ref in sync every render
   useEffect(() => {
@@ -67,6 +68,7 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
   const setSelectedNodeRef = useRef(setSelectedNode);
 
   const prevNodeCountRef = useRef(0);
+  const initialZoomDone = useRef(false);
 
   useEffect(() => {
     graphDataRef.current.nodes = data.nodes;
@@ -76,6 +78,13 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
     if (data.nodes.length !== prevNodeCountRef.current) {
       prevNodeCountRef.current = data.nodes.length;
       fgRef.current?.d3ReheatSimulation?.();
+      // Zoom in on first load
+      if (!initialZoomDone.current && data.nodes.length > 0) {
+        initialZoomDone.current = true;
+        setTimeout(() => {
+          fgRef.current?.zoom(4, 800);
+        }, 1200); // wait for simulation to settle a bit
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.nodes, data.edges, setSelectedNode]);
@@ -210,6 +219,8 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
       onMouseMove={(e) => {
         if (tooltip) setTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null);
       }}
+      onWheel={() => setShowZoomHint(false)}
+      onTouchStart={() => setShowZoomHint(false)}
     >
       {data.nodes.length === 0 ? (
         <div className="flex items-center justify-center h-full">
@@ -259,6 +270,16 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
                 {tooltip.node.licenseType} · {tooltip.node.derivativeCount} derivatives
               </p>
               <p className="text-zinc-500 text-xs">{tooltip.node.owner.slice(0, 6)}…{tooltip.node.owner.slice(-4)}</p>
+            </div>
+          )}
+
+          {/* Zoom hint — fades out after first scroll/pinch */}
+          {showZoomHint && (
+            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 pointer-events-none animate-pulse">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900/90 border border-zinc-700 rounded-full text-xs text-zinc-400 backdrop-blur-sm whitespace-nowrap">
+                <span className="text-base">🔍</span>
+                Scroll or pinch to zoom
+              </div>
             </div>
           )}
         </>

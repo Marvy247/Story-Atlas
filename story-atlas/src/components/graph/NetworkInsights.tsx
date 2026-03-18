@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { TrendingUp, Award, Network, GitBranch } from 'lucide-react';
+import { TrendingUp, Award, Network, GitBranch, ChevronDown } from 'lucide-react';
 import { GraphData } from '@/lib/story-protocol/types';
 import { motion } from 'framer-motion';
 import { fadeInDown } from '@/lib/animations';
@@ -20,6 +20,7 @@ interface Insight {
 }
 
 export default function NetworkInsights({ graphData }: NetworkInsightsProps) {
+  const [open, setOpen] = useState(false);
   const insights = useMemo(() => {
     const nodes = graphData.nodes;
     const edges = graphData.edges;
@@ -110,27 +111,37 @@ export default function NetworkInsights({ graphData }: NetworkInsightsProps) {
       variants={fadeInDown}
       initial="hidden"
       animate="visible"
-      className="absolute top-6 left-1/2 -translate-x-1/2 z-10"
+      className="absolute top-4 left-1/2 -translate-x-1/2 z-10 w-max max-w-[calc(100vw-8rem)]"
     >
-      <Card className="bg-zinc-900/90 backdrop-blur-sm border-zinc-800 p-3">
-        <div className="flex items-center gap-4">
-          {insights.map((insight, index) => (
-            <div
-              key={index}
-              className="flex items-center gap-2 px-3 py-2 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors"
-            >
-              <insight.icon className={`h-4 w-4 ${insight.color}`} />
-              <div>
-                <p className="text-xs text-zinc-500">{insight.label}</p>
-                <p className={`text-sm font-bold ${insight.color}`}>
-                  {insight.value}
-                </p>
-                <p className="text-xs text-zinc-600">{insight.description}</p>
+      {/* Toggle pill */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 mx-auto px-4 py-1.5 bg-zinc-900/95 border border-zinc-700 rounded-full text-xs font-semibold text-zinc-300 backdrop-blur-sm hover:bg-zinc-800 transition-colors"
+      >
+        <Network className="h-3.5 w-3.5 text-blue-400" />
+        Insights
+        <ChevronDown className={`h-3.5 w-3.5 text-zinc-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Collapsible row */}
+      {open && (
+        <Card className="mt-1 bg-zinc-900/95 backdrop-blur-sm border-zinc-700 p-2">
+          <div className="flex items-center gap-2 flex-wrap justify-center">
+            {insights.map((insight, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-2 px-3 py-2 bg-zinc-800/50 rounded-lg"
+              >
+                <insight.icon className={`h-4 w-4 ${insight.color} shrink-0`} />
+                <div>
+                  <p className="text-xs text-zinc-500">{insight.label}</p>
+                  <p className={`text-sm font-bold ${insight.color}`}>{insight.value}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </Card>
+            ))}
+          </div>
+        </Card>
+      )}
     </motion.div>
   );
 }
