@@ -5,10 +5,10 @@ export interface IPAsset {
   ipId: string;
   tokenContract: string;
   tokenId: string;
-  chainId: number;
+  chainId: string;
   owner: string;
   blockNumber: number;
-  blockTimestamp: number;
+  blockTimestamp: number; // derived from registrationDate
   metadata?: IPMetadata;
   licenseTerms?: LicenseTerms[];
   parents?: string[];
@@ -100,4 +100,49 @@ export interface IPStats {
   licenseDistribution: { [key: string]: number };
   mediaTypeDistribution: { [key: string]: number };
   ipsOverTime: { date: string; count: number }[];
+}
+
+// Raw API response types (Story Protocol API v4)
+export interface RawAPIAsset {
+  ipId: string;
+  ownerAddress: string;
+  blockNumber: number;
+  chainId: string;
+  tokenContract: string;
+  tokenId: string;
+  name: string;
+  registrationDate: string;
+  parentsCount: number;
+  childrenCount: number;
+  nftMetadata?: {
+    name?: string;
+    description?: string | null;
+    image?: { cachedUrl?: string; originalUrl?: string };
+  };
+  licenses?: RawLicense[];
+}
+
+export interface RawLicense {
+  licenseTemplateId: string;
+  licenseTermsId: string;
+  terms: {
+    transferable: boolean;
+    royaltyPolicy: string;
+    defaultMintingFee: string;
+    currency: string;
+    commercialUse: boolean;
+    commercialAttribution: boolean;
+    commercializerChecker: string;
+    derivativesAllowed: boolean;
+    derivativesAttribution: boolean;
+    derivativesApproval: boolean;
+    commercialRevShare: number;
+  };
+}
+
+export interface RawEdge {
+  parentIpId: string;
+  childIpId: string;
+  licenseTermsId: string;
+  licenseTemplate: string;
 }

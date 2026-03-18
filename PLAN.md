@@ -12,15 +12,15 @@
 - [x] Document each variable with inline comments
 
 ## 3. Real API Validation
-- [ ] Verify field mappings against live Story API v4 response shape
-- [ ] Fix `parents`/`children` mapping (`ancestorIpIds` vs `parentIpIds`)
-- [ ] Verify or remove `fetchIPRelationships` (`/assets/{id}/relationships` endpoint)
-- [ ] Test `searchIPAssets` against real API
+- [x] Verify field mappings against live Story API v4 response shape
+- [x] Fix `parents`/`children` mapping (`ancestorIpIds` vs `parentIpIds`)
+- [x] Verify or remove `fetchIPRelationships` (`/assets/{id}/relationships` endpoint)
+- [x] Test `searchIPAssets` against real API
 
 ## 4. Remove Mock Data Fallback in Production
-- [ ] Remove silent fallback to mock data on API error in `fetchIPAssets`
-- [ ] Remove silent fallback to mock data on API error in `searchIPAssets`
-- [ ] Surface real errors to the UI instead of silently swallowing them
+- [x] Remove silent fallback to mock data on API error in `fetchIPAssets`
+- [x] Remove silent fallback to mock data on API error in `searchIPAssets`
+- [x] Surface real errors to the UI instead of silently swallowing them
 
 ## 5. Fix Wallet / AppKit Context
 - [ ] Decide: read-only app (remove wallet connect) or keep it

@@ -1,7 +1,43 @@
-// Query functions for Story Protocol data
 import { fetchFromStoryAPI } from './client';
-import { IPAsset, IPStats } from './types';
+import { IPAsset, IPStats, RawAPIAsset, RawLicense, RawEdge } from './types';
 import { useMockData, getMockIPAssets } from './mock-data';
+
+function mapAsset(raw: RawAPIAsset): IPAsset {
+  return {
+    id: raw.ipId,
+    ipId: raw.ipId,
+    tokenContract: raw.tokenContract,
+    tokenId: raw.tokenId,
+    chainId: raw.chainId,
+    owner: raw.ownerAddress,
+    blockNumber: raw.blockNumber,
+    blockTimestamp: raw.registrationDate ? Math.floor(new Date(raw.registrationDate).getTime() / 1000) : 0,
+    metadata: {
+      name: raw.nftMetadata?.name || raw.name,
+      description: raw.nftMetadata?.description ?? undefined,
+      imageUrl: raw.nftMetadata?.image?.cachedUrl || raw.nftMetadata?.image?.originalUrl,
+    },
+    licenseTerms: (raw.licenses || []).map((l: RawLicense) => ({
+      id: l.licenseTermsId,
+      licenseTermsId: l.licenseTermsId,
+      licenseTemplate: l.licenseTemplateId,
+      transferable: l.terms.transferable,
+      royaltyPolicy: l.terms.royaltyPolicy,
+      defaultMintingFee: l.terms.defaultMintingFee,
+      currency: l.terms.currency,
+      commercialUse: l.terms.commercialUse,
+      commercialAttribution: l.terms.commercialAttribution,
+      commercializerChecker: l.terms.commercializerChecker,
+      derivativesAllowed: l.terms.derivativesAllowed,
+      derivativesAttribution: l.terms.derivativesAttribution,
+      derivativeApprovalRequired: l.terms.derivativesApproval,
+      derivativeRevShare: l.terms.commercialRevShare,
+    })),
+    parents: [],
+    children: [],
+    totalRevenue: '0',
+  };
+}
 
 export async function fetchIPAssets(params?: {
   limit?: number;
@@ -9,225 +45,124 @@ export async function fetchIPAssets(params?: {
   orderBy?: string;
   orderDirection?: 'asc' | 'desc';
 }): Promise<{ data: IPAsset[]; total: number }> {
-  // Use mock data for development
   if (useMockData) {
     const mockData = getMockIPAssets();
     const start = params?.offset || 0;
-    const end = start + (params?.limit || 100);
-    return {
-      data: mockData.slice(start, end),
-      total: mockData.length,
-    };
+    return { data: mockData.slice(start, start + (params?.limit || 100)), total: mockData.length };
   }
-  
-  try {
-    // Real Story Protocol API call with v4 format (correct format)
-    const result = await fetchFromStoryAPI('/assets', {
-      method: 'POST',
-      body: JSON.stringify({
-        includeLicenses: true,
-        moderated: false,
-        orderBy: params?.orderBy || 'blockTimestamp',
-        orderDirection: params?.orderDirection || 'desc',
-        pagination: {
-          limit: params?.limit || 100,
-          offset: params?.offset || 0,
-        },
-      }),
-    });
 
-    // Map the real API response to our interface
-    const assets: IPAsset[] = (result.data || []).map((asset: any) => ({
-      id: asset.id,
-      ipId: asset.ipId,
-      tokenContract: asset.nftMetadata?.tokenContract || asset.tokenContract,
-      tokenId: asset.nftMetadata?.tokenId || asset.tokenId,
-      chainId: asset.chainId || 1513,
-      owner: asset.owner,
-      blockNumber: asset.blockNumber,
-      blockTimestamp: asset.blockTimestamp,
-      metadata: asset.nftMetadata ? {
-        name: asset.nftMetadata.name,
-        description: asset.nftMetadata.description,
-        mediaType: asset.nftMetadata.mediaType,
-        imageUrl: asset.nftMetadata.imageUrl,
-      } : undefined,
-      licenseTerms: asset.licenseTerms || [],
-      parents: asset.ancestorIpIds || [],
-      children: asset.childIpIds || [],
-      totalRevenue: asset.totalRevenue || '0',
-    }));
+  const result = await fetchFromStoryAPI('/assets', {
+    method: 'POST',
+    body: JSON.stringify({
+      includeLicenses: true,
+      orderBy: params?.orderBy || 'blockNumber',
+      orderDirection: params?.orderDirection || 'desc',
+      pagination: { limit: params?.limit || 100, offset: params?.offset || 0 },
+    }),
+  });
 
-    return {
-      data: assets,
-      total: result.pagination?.total || assets.length,
-    };
-  } catch (error) {
-    console.error('Error fetching IP assets:', error);
-    // Fallback to mock data on error
-    console.warn('Falling back to mock data due to API error');
-    const mockData = getMockIPAssets();
-    const start = params?.offset || 0;
-    const end = start + (params?.limit || 100);
-    return {
-      data: mockData.slice(start, end),
-      total: mockData.length,
-    };
-  }
+  return {
+    data: (result.data || []).map(mapAsset),
+    total: result.pagination?.total || 0,
+  };
+}
+
+export async function fetchIPEdges(params?: {
+  limit?: number;
+  offset?: number;
+}): Promise<RawEdge[]> {
+  if (useMockData) return [];
+
+  const result = await fetchFromStoryAPI('/assets/edges', {
+    method: 'POST',
+    body: JSON.stringify({
+      pagination: { limit: params?.limit || 500, offset: params?.offset || 0 },
+    }),
+  });
+
+  return result.data || [];
 }
 
 export async function fetchIPAssetById(ipId: string): Promise<IPAsset | null> {
-  try {
-    const result = await fetchFromStoryAPI(`/assets/${ipId}`);
-    return result.data || null;
-  } catch (error) {
-    console.error(`Error fetching IP asset ${ipId}:`, error);
-    return null;
+  if (useMockData) {
+    return getMockIPAssets().find(a => a.ipId === ipId) || null;
   }
-}
 
-export async function fetchIPRelationships(ipId: string): Promise<{
-  parents: string[];
-  children: string[];
-}> {
-  try {
-    const result = await fetchFromStoryAPI(`/assets/${ipId}/relationships`);
-    return {
-      parents: result.data?.parents || [],
-      children: result.data?.children || [],
-    };
-  } catch (error) {
-    console.error(`Error fetching relationships for ${ipId}:`, error);
-    return { parents: [], children: [] };
-  }
-}
-
-export async function fetchIPLicenses(ipId: string) {
-  try {
-    const result = await fetchFromStoryAPI(`/assets/${ipId}/licenses`);
-    return result.data || [];
-  } catch (error) {
-    console.error(`Error fetching licenses for ${ipId}:`, error);
-    return [];
-  }
+  const result = await fetchFromStoryAPI(`/assets/${ipId}`);
+  return result.data ? mapAsset(result.data) : null;
 }
 
 export async function searchIPAssets(query: string, limit = 20): Promise<IPAsset[]> {
-  // Use mock data for development
   if (useMockData) {
-    const mockData = getMockIPAssets();
     const lowerQuery = query.toLowerCase();
-    return mockData.filter(asset => 
-      asset.metadata?.name?.toLowerCase().includes(lowerQuery) ||
-      asset.ipId.toLowerCase().includes(lowerQuery) ||
-      asset.owner.toLowerCase().includes(lowerQuery)
-    ).slice(0, limit);
+    return getMockIPAssets()
+      .filter(a =>
+        a.metadata?.name?.toLowerCase().includes(lowerQuery) ||
+        a.ipId.toLowerCase().includes(lowerQuery) ||
+        a.owner.toLowerCase().includes(lowerQuery)
+      )
+      .slice(0, limit);
   }
 
-  try {
-    // Real Story Protocol search API
-    const result = await fetchFromStoryAPI('/assets/search', {
-      method: 'POST',
-      body: JSON.stringify({
-        query,
-        includeLicenses: true,
-        moderated: false,
-        pagination: { 
-          limit, 
-          offset: 0 
-        },
-      }),
-    });
+  // API has no search endpoint — filter from a recent fetch by name match
+  const result = await fetchFromStoryAPI('/assets', {
+    method: 'POST',
+    body: JSON.stringify({
+      includeLicenses: false,
+      orderBy: 'blockNumber',
+      orderDirection: 'desc',
+      pagination: { limit: 200, offset: 0 },
+    }),
+  });
 
-    // Map search results to IPAsset format
-    const assets: IPAsset[] = (result.data || []).map((asset: any) => ({
-      id: asset.id,
-      ipId: asset.ipId,
-      tokenContract: asset.nftMetadata?.tokenContract || asset.tokenContract,
-      tokenId: asset.nftMetadata?.tokenId || asset.tokenId,
-      chainId: asset.chainId || 1513,
-      owner: asset.owner,
-      blockNumber: asset.blockNumber,
-      blockTimestamp: asset.blockTimestamp,
-      metadata: asset.nftMetadata ? {
-        name: asset.nftMetadata.name,
-        description: asset.nftMetadata.description,
-        mediaType: asset.nftMetadata.mediaType,
-        imageUrl: asset.nftMetadata.imageUrl,
-      } : undefined,
-      licenseTerms: asset.licenseTerms || [],
-      parents: asset.ancestorIpIds || [],
-      children: asset.childIpIds || [],
-      totalRevenue: asset.totalRevenue || '0',
-    }));
-
-    return assets;
-  } catch (error) {
-    console.error('Error searching IP assets:', error);
-    return [];
-  }
+  const lowerQuery = query.toLowerCase();
+  return (result.data || [])
+    .map(mapAsset)
+    .filter((a: IPAsset) =>
+      a.metadata?.name?.toLowerCase().includes(lowerQuery) ||
+      a.ipId.toLowerCase().includes(lowerQuery) ||
+      a.owner.toLowerCase().includes(lowerQuery)
+    )
+    .slice(0, limit);
 }
 
 export async function fetchIPStats(): Promise<IPStats> {
-  try {
-    // This would be a custom aggregation endpoint
-    // For now, we'll compute from fetched data
-    const { data: assets } = await fetchIPAssets({ limit: 1000 });
+  const [{ data: assets }, edges] = await Promise.all([
+    fetchIPAssets({ limit: 500 }),
+    fetchIPEdges({ limit: 500 }),
+  ]);
 
-    const stats: IPStats = {
-      totalIPs: assets.length,
-      totalDerivatives: assets.filter(a => a.parents && a.parents.length > 0).length,
-      totalRevenue: '0',
-      mostRemixedIPs: [],
-      licenseDistribution: {},
-      mediaTypeDistribution: {},
-      ipsOverTime: [],
-    };
+  // Build children counts from edges
+  const childrenCount = new Map<string, number>();
+  edges.forEach(e => {
+    childrenCount.set(e.parentIpId, (childrenCount.get(e.parentIpId) || 0) + 1);
+  });
 
-    // Calculate most remixed
-    const derivativeCounts = new Map<string, number>();
-    assets.forEach(asset => {
-      if (asset.children) {
-        derivativeCounts.set(asset.ipId, asset.children.length);
-      }
-    });
-
-    stats.mostRemixedIPs = Array.from(derivativeCounts.entries())
+  const stats: IPStats = {
+    totalIPs: assets.length,
+    totalDerivatives: edges.length,
+    totalRevenue: '0',
+    mostRemixedIPs: Array.from(childrenCount.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
       .map(([ipId, count]) => ({
         ipId,
         count,
         name: assets.find(a => a.ipId === ipId)?.metadata?.name,
-      }));
+      })),
+    licenseDistribution: {},
+    mediaTypeDistribution: {},
+    ipsOverTime: [],
+  };
 
-    // License distribution
-    assets.forEach(asset => {
-      if (asset.licenseTerms) {
-        asset.licenseTerms.forEach(term => {
-          const type = term.commercialUse ? 'Commercial' : 'Non-Commercial';
-          stats.licenseDistribution[type] = (stats.licenseDistribution[type] || 0) + 1;
-        });
-      }
+  assets.forEach(asset => {
+    (asset.licenseTerms || []).forEach(term => {
+      const type = term.commercialUse ? 'Commercial' : 'Non-Commercial';
+      stats.licenseDistribution[type] = (stats.licenseDistribution[type] || 0) + 1;
     });
+    const type = asset.metadata?.mediaType || 'other';
+    stats.mediaTypeDistribution[type] = (stats.mediaTypeDistribution[type] || 0) + 1;
+  });
 
-    // Media type distribution
-    assets.forEach(asset => {
-      const type = asset.metadata?.mediaType || 'other';
-      stats.mediaTypeDistribution[type] = (stats.mediaTypeDistribution[type] || 0) + 1;
-    });
-
-    return stats;
-  } catch (error) {
-    console.error('Error fetching IP stats:', error);
-    return {
-      totalIPs: 0,
-      totalDerivatives: 0,
-      totalRevenue: '0',
-      mostRemixedIPs: [],
-      licenseDistribution: {},
-      mediaTypeDistribution: {},
-      ipsOverTime: [],
-    };
-  }
+  return stats;
 }
