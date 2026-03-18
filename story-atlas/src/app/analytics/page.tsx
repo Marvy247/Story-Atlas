@@ -76,14 +76,19 @@ export default function AnalyticsPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild className="text-zinc-400 hover:text-white">
-            <Link href="/graph"><ArrowLeft className="h-4 w-4 mr-2" />Back to Graph</Link>
+        <div className="container mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <BarChart3 className="w-3.5 h-3.5 text-white" />
+            </div>
+            <span className="font-bold text-sm sm:text-base bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hidden sm:block">Story Atlas</span>
+          </Link>
+          <div className="h-5 w-px bg-zinc-800" />
+          <Button variant="ghost" size="sm" asChild className="text-zinc-400 hover:text-white px-2">
+            <Link href="/graph"><ArrowLeft className="h-4 w-4" /><span className="ml-1.5 hidden sm:inline">Back to Graph</span></Link>
           </Button>
-          <div className="h-6 w-px bg-zinc-800" />
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-blue-400" />
-            <h1 className="text-xl font-bold">Analytics Dashboard</h1>
+          <div className="flex items-center gap-2 ml-1">
+            <h1 className="text-base sm:text-xl font-bold">Analytics</h1>
           </div>
           {!isLoading && (
             <span className="ml-auto text-xs text-zinc-500">{assets.length.toLocaleString()} IPs loaded</span>
@@ -91,7 +96,7 @@ export default function AnalyticsPage() {
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {isLoading || !stats ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {[...Array(6)].map((_, i) => (

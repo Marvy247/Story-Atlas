@@ -44,7 +44,7 @@ export default function NodeDetails({ node }: NodeDetailsProps) {
         initial="hidden"
         animate="visible"
         exit="hidden"
-        className="fixed right-6 top-6 w-96 max-h-[80vh] overflow-y-auto z-50"
+        className="fixed right-0 top-0 sm:right-6 sm:top-6 w-full sm:w-96 max-h-[60vh] sm:max-h-[80vh] overflow-y-auto z-50 rounded-none sm:rounded-xl"
       >
         <Card className="bg-zinc-900 border-zinc-800 text-white">
           <div className="p-6">

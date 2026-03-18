@@ -100,44 +100,42 @@ export default function Home() {
     <div className="min-h-screen bg-zinc-950 text-white">
       {/* Header */}
       <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+        <div className="container mx-auto px-4 py-3">
+          {/* Top row: logo + actions */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2 shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                <GitBranch className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-bold text-base sm:text-lg bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hidden sm:block">
                 Story Atlas
-              </h1>
-              <p className="text-sm text-zinc-400 mt-1">
-                Interactive IP Relationship Explorer
-              </p>
-            </div>
-            <div className="flex items-center gap-6">
-              {!isLoading && (
-                <div className="flex gap-6 text-sm">
-                  <div>
-                    <span className="text-zinc-500">IPs: </span>
-                    <span className="font-semibold">{metrics.totalNodes}</span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-500">Connections: </span>
-                    <span className="font-semibold">{metrics.totalEdges}</span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-500">Isolated: </span>
-                    <span className="font-semibold">{metrics.isolatedNodes}</span>
-                  </div>
-                </div>
-              )}
+              </span>
+            </Link>
+
+            {/* Metrics — hidden on small screens */}
+            {!isLoading && (
+              <div className="hidden md:flex gap-4 text-sm">
+                <span><span className="text-zinc-500">IPs: </span><span className="font-semibold">{metrics.totalNodes}</span></span>
+                <span><span className="text-zinc-500">Connections: </span><span className="font-semibold">{metrics.totalEdges}</span></span>
+                <span className="hidden lg:inline"><span className="text-zinc-500">Isolated: </span><span className="font-semibold">{metrics.isolatedNodes}</span></span>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-1 sm:gap-2">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={() => setShowTimeTravel(!showTimeTravel)}
-                className="bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-white"
+                className="text-zinc-400 hover:text-white px-2 sm:px-3"
+                title="Time Travel"
               >
-                <Clock className="h-4 w-4 mr-2" />
-                {showTimeTravel ? 'Hide' : 'Time Travel'}
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:inline ml-1.5">{showTimeTravel ? 'Hide' : 'Time Travel'}</span>
               </Button>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={() => {
                   if (selectedNode) {
@@ -146,40 +144,42 @@ export default function Home() {
                   }
                 }}
                 disabled={!selectedNode}
-                className="bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-white disabled:opacity-50"
+                className="text-zinc-400 hover:text-white px-2 sm:px-3 disabled:opacity-30"
+                title="Genealogy Tree"
               >
-                <GitBranch className="h-4 w-4 mr-2" />
-                Genealogy
+                <GitBranch className="h-4 w-4" />
+                <span className="hidden sm:inline ml-1.5">Genealogy</span>
               </Button>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 asChild
-                className="bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-white"
+                className="text-zinc-400 hover:text-white px-2 sm:px-3"
               >
                 <Link href="/analytics">
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Analytics
+                  <BarChart3 className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-1.5">Analytics</span>
                 </Link>
               </Button>
             </div>
           </div>
-          
+
           {/* Search and Filter Bar */}
-          <div className="flex items-center gap-3">
-            <SearchBar 
-              onSelectIP={(ipId) => {
-                const node = graphData.nodes.find(n => n.ipId === ipId);
-                if (node) {
-                  useGraphStore.setState({ selectedNode: node });
-                  // Zoom to node
-                  if (fgRef.current && node.x != null && node.y != null) {
-                    fgRef.current.centerAt(node.x, node.y, 600);
-                    fgRef.current.zoom(4, 600);
+          <div className="flex items-center gap-2 mt-3">
+            <div className="flex-1 min-w-0">
+              <SearchBar
+                onSelectIP={(ipId) => {
+                  const node = graphData.nodes.find(n => n.ipId === ipId);
+                  if (node) {
+                    useGraphStore.setState({ selectedNode: node });
+                    if (fgRef.current && node.x != null && node.y != null) {
+                      fgRef.current.centerAt(node.x, node.y, 600);
+                      fgRef.current.zoom(4, 600);
+                    }
                   }
-                }
-              }}
-            />
+                }}
+              />
+            </div>
             <FilterPanel />
           </div>
         </div>

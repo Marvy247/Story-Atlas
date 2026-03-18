@@ -159,8 +159,8 @@ export default function LandingPage() {
             </div>
             <span className="font-bold text-lg tracking-tight">Story Atlas</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild className="text-zinc-400 hover:text-white">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" asChild className="text-zinc-400 hover:text-white hidden sm:flex">
               <Link href="/analytics">Analytics</Link>
             </Button>
             <Button size="sm" asChild className="bg-blue-600 hover:bg-blue-500 text-white">
@@ -189,7 +189,7 @@ export default function LandingPage() {
             Live on Story Protocol Mainnet
           </motion.div>
 
-          <motion.h1 variants={fadeUp} className="text-5xl sm:text-7xl font-extrabold tracking-tight mb-6 leading-[1.05]">
+          <motion.h1 variants={fadeUp} className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-[1.05]">
             Explore the{' '}
             <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
               IP Universe
@@ -210,7 +210,7 @@ export default function LandingPage() {
             </Button>
           </motion.div>
 
-          <motion.div variants={fadeUp} className="mt-16 flex flex-wrap items-center justify-center gap-10 text-center">
+          <motion.div variants={fadeUp} className="mt-12 sm:mt-16 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-center">
             {[
               { value: '5.6M+', label: 'IP Assets' },
               { value: 'Mainnet', label: 'Story Protocol' },
@@ -235,7 +235,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section className="relative py-28 px-6">
+      <section className="relative py-16 sm:py-28 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <motion.div
             className="text-center mb-16"
@@ -273,10 +273,10 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="py-24 px-6 border-t border-zinc-800/60">
+      <section className="py-16 sm:py-24 px-4 sm:px-6 border-t border-zinc-800/60">
         <div className="max-w-5xl mx-auto">
           <motion.div
-            className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center"
+            className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-16 items-center"
             variants={stagger}
             initial="hidden"
             whileInView="visible"
@@ -321,7 +321,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-28 px-6">
+      <section className="py-16 sm:py-28 px-4 sm:px-6">
         <motion.div
           className="max-w-3xl mx-auto text-center"
           variants={stagger}
@@ -331,7 +331,7 @@ export default function LandingPage() {
         >
           <motion.div
             variants={fadeUp}
-            className="relative rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950 p-12 overflow-hidden"
+            className="relative rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950 p-8 sm:p-12 overflow-hidden"
           >
             <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
             <motion.h2 variants={fadeUp} className="text-4xl font-bold tracking-tight mb-4">
@@ -353,7 +353,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-800/60 py-8 px-6">
+      <footer className="border-t border-zinc-800/60 py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-zinc-500">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
@@ -361,7 +361,7 @@ export default function LandingPage() {
             </div>
             <span>Story Atlas — Built for Story Protocol</span>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-6 flex-wrap justify-center">
             <Link href="/graph" className="hover:text-zinc-300 transition-colors">Graph</Link>
             <Link href="/analytics" className="hover:text-zinc-300 transition-colors">Analytics</Link>
             <a href="https://docs.story.foundation" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300 transition-colors">Docs</a>
