@@ -84,12 +84,13 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
     if (data.nodes.length !== prevNodeCountRef.current) {
       prevNodeCountRef.current = data.nodes.length;
       fgRef.current?.d3ReheatSimulation?.();
-      // Zoom in on first load
+      // Zoom to fit + center on first load
       if (!initialZoomDone.current && data.nodes.length > 0) {
         initialZoomDone.current = true;
         setTimeout(() => {
-          fgRef.current?.zoom(4, 800);
-        }, 1200); // wait for simulation to settle a bit
+          fgRef.current?.zoomToFit(400, 80); // fit all nodes with 80px padding
+          setTimeout(() => fgRef.current?.zoom(3, 600), 500); // then zoom in
+        }, 1200);
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
