@@ -202,15 +202,22 @@ export default function Home() {
             <div className="text-center space-y-4">
               {/* Skeleton graph */}
               <div className="relative w-64 h-64 mx-auto">
-                {[...Array(6)].map((_, i) => (
+                {[
+                  { size: 20, left: '10%', top: '10%' },
+                  { size: 28, left: '45%', top: '10%' },
+                  { size: 22, left: '80%', top: '10%' },
+                  { size: 18, left: '10%', top: '55%' },
+                  { size: 24, left: '45%', top: '55%' },
+                  { size: 30, left: '80%', top: '55%' },
+                ].map((dot, i) => (
                   <div
                     key={i}
                     className="absolute rounded-full bg-zinc-800 animate-pulse"
                     style={{
-                      width: `${20 + Math.random() * 20}px`,
-                      height: `${20 + Math.random() * 20}px`,
-                      left: `${10 + (i % 3) * 35}%`,
-                      top: `${10 + Math.floor(i / 3) * 45}%`,
+                      width: `${dot.size}px`,
+                      height: `${dot.size}px`,
+                      left: dot.left,
+                      top: dot.top,
                       animationDelay: `${i * 0.15}s`,
                     }}
                   />
