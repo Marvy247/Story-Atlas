@@ -1,10 +1,10 @@
 # Story Atlas — Mainnet Production Plan
 
 ## 1. Chain & Network Config
-- [ ] Add Story mainnet chain definition (chain ID 1514) to `client.ts`
-- [ ] Replace Odyssey testnet with mainnet as default chain
-- [ ] Update `config/index.tsx` to use Story mainnet instead of Base/BaseSepolia
-- [ ] Fix `context/index.tsx` metadata (remove "Base Lending Pool" copy-paste)
+- [x] Add Story mainnet chain definition (chain ID 1514) to `client.ts`
+- [x] Replace Odyssey testnet with mainnet as default chain
+- [x] Update `config/index.tsx` to use Story mainnet instead of Base/BaseSepolia
+- [x] Fix `context/index.tsx` metadata (remove "Base Lending Pool" copy-paste)
 
 ## 2. Environment Variables
 - [ ] Create `.env.local.example` with all required vars
