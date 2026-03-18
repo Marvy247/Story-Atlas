@@ -8,7 +8,7 @@ import { FilterOptions } from '../story-protocol/types';
 import { fetchIPEdges } from '../story-protocol/queries';
 
 export function useGraphData(filters?: FilterOptions) {
-  const { assets, isLoading: assetsLoading, isError: assetsError } = useIPAssets({ limit: 200 });
+  const { assets, isLoading: assetsLoading, isError: assetsError } = useIPAssets();
 
   const { data: edges = [], isLoading: edgesLoading } = useSWR(
     'ip-edges',

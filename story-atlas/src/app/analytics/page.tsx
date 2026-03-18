@@ -14,7 +14,7 @@ import { motion } from 'framer-motion';
 import { fadeIn, staggerContainer } from '@/lib/animations';
 
 export default function AnalyticsPage() {
-  const { assets, isLoading: assetsLoading } = useIPAssets({ limit: 1000 });
+  const { assets, isLoading: assetsLoading } = useIPAssets();
   const { stats, isLoading: statsLoading } = useIPStats();
 
   const isLoading = assetsLoading || statsLoading;

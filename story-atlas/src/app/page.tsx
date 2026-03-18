@@ -26,7 +26,7 @@ import { buildIPTree } from '@/lib/graph/tree-builder';
 export default function Home() {
   const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
   const filters = useFilterStore();
-  const { assets } = useIPAssets({ limit: 1000 });
+  const { assets, hasMore, loadMore } = useIPAssets();
   const { graphData, metrics, isLoading, isError } = useGraphData(filters);
   const { selectedNode } = useGraphStore();
   
@@ -217,6 +217,19 @@ export default function Home() {
             <GraphStats metrics={metrics} />
             <GraphControls graphData={graphData} />
             {selectedNode && <NodeDetails node={selectedNode} />}
+
+            {/* Load More */}
+            {hasMore && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
+                <Button
+                  size="sm"
+                  onClick={loadMore}
+                  className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white shadow-lg"
+                >
+                  Load More IPs ({assets.length} loaded)
+                </Button>
+              </div>
+            )}
             
             {/* Phase 5A: Time Travel Slider */}
             {showTimeTravel && (

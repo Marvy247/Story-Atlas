@@ -28,9 +28,9 @@
 - [x] If removing: delete `context/index.tsx` and `config/index.tsx`, remove unused deps
 
 ## 6. Performance — Pagination
-- [ ] Cap initial graph load (e.g. 200 nodes) with a "Load More" button
-- [ ] Deduplicate `useIPAssets({ limit: 1000 })` calls between main page and analytics (shared SWR key)
-- [ ] Move `fetchIPStats` aggregation to avoid re-fetching assets already in cache
+- [x] Cap initial graph load (e.g. 200 nodes) with a "Load More" button
+- [x] Deduplicate `useIPAssets({ limit: 1000 })` calls between main page and analytics (shared SWR key)
+- [x] Move `fetchIPStats` aggregation to avoid re-fetching assets already in cache
 
 ## 7. Build & Type Check
 - [ ] Run `npx tsc --noEmit` and fix all type errors
