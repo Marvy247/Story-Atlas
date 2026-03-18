@@ -38,9 +38,9 @@
 - [x] Run `npm run lint` and fix lint warnings
 
 ## 8. SEO & Metadata
-- [ ] Add OpenGraph tags to `layout.tsx`
-- [ ] Add Twitter card meta tags
-- [ ] Set canonical URL via env var
+- [x] Add OpenGraph tags to `layout.tsx`
+- [x] Add Twitter card meta tags
+- [x] Set canonical URL via env var
 
 ## 9. Deployment
 - [ ] Add `NEXT_PUBLIC_*` vars to hosting environment (Vercel / etc.)
