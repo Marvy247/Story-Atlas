@@ -66,13 +66,19 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
   const dataRef = useRef(data);
   const setSelectedNodeRef = useRef(setSelectedNode);
 
+  const prevNodeCountRef = useRef(0);
+
   useEffect(() => {
     graphDataRef.current.nodes = data.nodes;
     graphDataRef.current.links = data.edges;
     dataRef.current = data;
     setSelectedNodeRef.current = setSelectedNode;
-    fgRef.current?.d3ReheatSimulation?.();
-  }, [data, setSelectedNode]);
+    if (data.nodes.length !== prevNodeCountRef.current) {
+      prevNodeCountRef.current = data.nodes.length;
+      fgRef.current?.d3ReheatSimulation?.();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.nodes, data.edges, setSelectedNode]);
 
   // Preload images for visible nodes
   useEffect(() => {
