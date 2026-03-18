@@ -23,7 +23,7 @@ export default function GraphStats({ metrics }: GraphStatsProps) {
   ];
 
   return (
-    <div className="absolute bottom-20 right-4 z-10 w-44 sm:w-52">
+    <div className="absolute top-4 right-4 z-10 w-44 sm:w-52">
       {/* Toggle button */}
       <button
         onClick={() => setOpen(o => !o)}
