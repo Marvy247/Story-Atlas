@@ -30,23 +30,28 @@ export default function ForceGraph({ data, width = 800, height = 600 }: ForceGra
   useEffect(() => { selectedNodeRef.current = selectedNode; }, [selectedNode]);
   useEffect(() => { highlightedNodesRef.current = highlightedNodes; }, [highlightedNodes]);
 
-  // Stable graph data ref — never changes identity so simulation never resets
+  // Stable refs — never change identity so callbacks and simulation never reset
   const graphDataRef = useRef({ nodes: data.nodes, links: data.edges });
+  const dataRef = useRef(data);
+  const setSelectedNodeRef = useRef(setSelectedNode);
   useEffect(() => {
     graphDataRef.current.nodes = data.nodes;
     graphDataRef.current.links = data.edges;
-    // Notify force graph of new data without replacing the object
+    dataRef.current = data;
+    setSelectedNodeRef.current = setSelectedNode;
     fgRef.current?.d3ReheatSimulation?.();
-  }, [data.nodes, data.edges]);
+  }, [data, setSelectedNode]);
 
   const handleNodeClick = useCallback((node: GraphNode) => {
-    setSelectedNode(node);
-    const ids = new Set<string>([node.id]);
-    data.edges.forEach(edge => {
+    // Find the matching node from our data (library mutates objects, we want our typed version)
+    const ours = dataRef.current.nodes.find(n => n.id === node.id) ?? node;
+    setSelectedNodeRef.current(ours);
+    const ids = new Set<string>([ours.id]);
+    dataRef.current.edges.forEach(edge => {
       const src = typeof edge.source === 'string' ? edge.source : (edge.source as GraphNode).id;
       const tgt = typeof edge.target === 'string' ? edge.target : (edge.target as GraphNode).id;
-      if (src === node.id) ids.add(tgt);
-      if (tgt === node.id) ids.add(src);
+      if (src === ours.id) ids.add(tgt);
+      if (tgt === ours.id) ids.add(src);
     });
     useGraphStore.setState({ highlightedNodes: ids });
   // eslint-disable-next-line react-hooks/exhaustive-deps
