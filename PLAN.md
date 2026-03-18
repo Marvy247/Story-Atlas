@@ -7,9 +7,9 @@
 - [x] Fix `context/index.tsx` metadata (remove "Base Lending Pool" copy-paste)
 
 ## 2. Environment Variables
-- [ ] Create `.env.local.example` with all required vars
-- [ ] Set `NEXT_PUBLIC_USE_MOCK_DATA=false` as default in example
-- [ ] Document each variable with inline comments
+- [x] Create `.env.local.example` with all required vars
+- [x] Set `NEXT_PUBLIC_USE_MOCK_DATA=false` as default in example
+- [x] Document each variable with inline comments
 
 ## 3. Real API Validation
 - [ ] Verify field mappings against live Story API v4 response shape
