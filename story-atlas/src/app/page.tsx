@@ -27,7 +27,17 @@ const INITIAL_NOW = Math.floor(Date.now() / 1000);
 
 export default function Home() {
   const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
-  const filters = useFilterStore();
+  // Select only primitives from filter store — prevents useGraphData recomputing on every render
+  const searchQuery = useFilterStore(s => s.searchQuery);
+  const licenseTypes = useFilterStore(s => s.licenseTypes);
+  const mediaTypes = useFilterStore(s => s.mediaTypes);
+  const commercialOnly = useFilterStore(s => s.commercialOnly);
+  const hasDerivatives = useFilterStore(s => s.hasDerivatives);
+  const filters = useMemo(
+    () => ({ searchQuery, licenseTypes, mediaTypes, commercialOnly, hasDerivatives }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [searchQuery, licenseTypes?.join(','), mediaTypes?.join(','), commercialOnly, hasDerivatives]
+  );
   const { assets, hasMore, loadMore } = useIPAssets();
   const { graphData, metrics, isLoading, isError } = useGraphData(filters);
   const { selectedNode } = useGraphStore();
@@ -66,17 +76,15 @@ export default function Home() {
   
   // Update current date when date range changes — removed (currentDate derived from dateRange.max)
   
-  // Filter graph data by time travel date
+  // Filter graph data by time travel date — returns same reference when time travel is off
   const filteredByDate = useMemo(() => {
     if (!showTimeTravel) return graphData;
-    
     const filteredNodes = graphData.nodes.filter(node => node.timestamp <= currentDate);
     const nodeIds = new Set(filteredNodes.map(n => n.id));
-    const filteredEdges = graphData.edges.filter(
-      edge => nodeIds.has(edge.source) && nodeIds.has(edge.target)
-    );
-    
-    return { nodes: filteredNodes, edges: filteredEdges };
+    return {
+      nodes: filteredNodes,
+      edges: graphData.edges.filter(e => nodeIds.has(e.source as string) && nodeIds.has(e.target as string)),
+    };
   }, [graphData, currentDate, showTimeTravel]);
 
   return (

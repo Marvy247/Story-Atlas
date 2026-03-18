@@ -82,16 +82,15 @@ export default function ForceGraph({ data, width = 800, height = 600 }: ForceGra
       ctx.stroke();
     }
 
-    // Label — fixed 12px regardless of zoom, only show when zoomed in
-    if (globalScale > 0.8) {
-      const LABEL_SIZE = 12;
-      ctx.font = `${LABEL_SIZE / globalScale}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      const label = node.name.length > 20 ? node.name.slice(0, 18) + '…' : node.name;
-      ctx.fillText(label, x, y + nodeSize + 2 / globalScale);
-    }
+    // Label — always visible, fixed screen size of ~11px
+    const LABEL_PX = 11;
+    const fontSize = LABEL_PX / globalScale;
+    ctx.font = `${fontSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    const label = node.name.length > 20 ? node.name.slice(0, 18) + '…' : node.name;
+    ctx.fillText(label, x, y + nodeSize + 2 / globalScale);
   }, []);
 
   const linkCanvasObject = useCallback((link: { source: string | GraphNode; target: string | GraphNode }, ctx: CanvasRenderingContext2D, globalScale: number) => {
