@@ -23,9 +23,9 @@
 - [x] Surface real errors to the UI instead of silently swallowing them
 
 ## 5. Fix Wallet / AppKit Context
-- [ ] Decide: read-only app (remove wallet connect) or keep it
-- [ ] If keeping: wire `ContextProvider` into `layout.tsx` with correct Story network
-- [ ] If removing: delete `context/index.tsx` and `config/index.tsx`, remove unused deps
+- [x] Decide: read-only app (remove wallet connect) or keep it
+- [x] If keeping: wire `ContextProvider` into `layout.tsx` with correct Story network
+- [x] If removing: delete `context/index.tsx` and `config/index.tsx`, remove unused deps
 
 ## 6. Performance — Pagination
 - [ ] Cap initial graph load (e.g. 200 nodes) with a "Load More" button
