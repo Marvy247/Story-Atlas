@@ -1,5 +1,5 @@
 // Build tree structure for genealogy view
-import { IPAsset, GraphNode } from '../story-protocol/types';
+import { IPAsset, IPMetadata } from '../story-protocol/types';
 
 export interface TreeNode {
   id: string;
@@ -8,7 +8,7 @@ export interface TreeNode {
   children?: TreeNode[];
   parent?: string;
   depth: number;
-  metadata?: any;
+  metadata?: IPMetadata;
   collapsed?: boolean;
   derivativeCount: number;
   licenseType: string;

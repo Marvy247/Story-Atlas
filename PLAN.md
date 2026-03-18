@@ -33,9 +33,9 @@
 - [x] Move `fetchIPStats` aggregation to avoid re-fetching assets already in cache
 
 ## 7. Build & Type Check
-- [ ] Run `npx tsc --noEmit` and fix all type errors
-- [ ] Run `npm run build` and fix all build errors
-- [ ] Run `npm run lint` and fix lint warnings
+- [x] Run `npx tsc --noEmit` and fix all type errors
+- [x] Run `npm run build` and fix all build errors
+- [x] Run `npm run lint` and fix lint warnings
 
 ## 8. SEO & Metadata
 - [ ] Add OpenGraph tags to `layout.tsx`

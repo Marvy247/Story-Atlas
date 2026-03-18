@@ -46,8 +46,6 @@ export default function NetworkInsights({ graphData }: NetworkInsightsProps) {
     }, nodes[0]);
 
     // Calculate average derivative depth
-    const depthMap = new Map<string, number>();
-    
     function calculateDepth(nodeId: string, visited: Set<string> = new Set()): number {
       if (visited.has(nodeId)) return 0;
       visited.add(nodeId);

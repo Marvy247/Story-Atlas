@@ -152,7 +152,23 @@ export function getMockIPAssets(): IPAsset[] {
         };
       }
     }
-    return licenseTypes[0];
+    // fallback
+    return {
+      id: `license-fallback`,
+      licenseTermsId: '0',
+      licenseTemplate: randomAddress(),
+      transferable: true,
+      royaltyPolicy: randomAddress(),
+      defaultMintingFee: '0',
+      currency: randomAddress(),
+      commercialUse: false,
+      commercialAttribution: false,
+      commercializerChecker: randomAddress(),
+      derivativesAllowed: true,
+      derivativesAttribution: true,
+      derivativeApprovalRequired: false,
+      derivativeRevShare: 0,
+    };
   };
   
   // Media type categories with weights
@@ -205,7 +221,7 @@ export function getMockIPAssets(): IPAsset[] {
         mediaType: cat.type,
         imageUrl: `https://picsum.photos/seed/${ipId.slice(2, 10)}/400/400`,
       },
-      licenseTerms: [license as any],
+      licenseTerms: [license],
       parents: [],
       children: [],
       totalRevenue: revenueBase.toFixed(2),
@@ -278,7 +294,7 @@ export function getMockIPAssets(): IPAsset[] {
         mediaType: primaryParent.metadata?.mediaType || 'image',
         imageUrl: `https://picsum.photos/seed/${ipId.slice(2, 10)}/400/400`,
       },
-      licenseTerms: [license as any],
+      licenseTerms: [license],
       parents,
       children: [],
       totalRevenue: revenueBase.toFixed(2),

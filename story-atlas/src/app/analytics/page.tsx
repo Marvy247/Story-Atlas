@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { fadeIn, staggerContainer } from '@/lib/animations';
+import { staggerContainer } from '@/lib/animations';
 
 export default function AnalyticsPage() {
   const { assets, isLoading: assetsLoading } = useIPAssets();

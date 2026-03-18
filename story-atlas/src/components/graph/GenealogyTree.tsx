@@ -62,7 +62,7 @@ export default function GenealogyTree({ tree, onClose }: GenealogyTreeProps) {
       .attr('fill', 'none')
       .attr('stroke', '#4b5563')
       .attr('stroke-width', 2)
-      .attr('d', d3.linkHorizontal<any, any>()
+      .attr('d', d3.linkHorizontal<d3.HierarchyPointLink<TreeNode>, d3.HierarchyPointNode<TreeNode>>()
         .x(d => d.y)
         .y(d => d.x)
       );

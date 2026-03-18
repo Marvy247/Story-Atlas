@@ -5,7 +5,7 @@ export interface IPAsset {
   ipId: string;
   tokenContract: string;
   tokenId: string;
-  chainId: string;
+  chainId: string | number;
   owner: string;
   blockNumber: number;
   blockTimestamp: number; // derived from registrationDate

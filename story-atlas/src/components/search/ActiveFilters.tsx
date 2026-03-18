@@ -47,7 +47,7 @@ export default function ActiveFilters() {
 
       {searchQuery && (
         <div className="flex items-center gap-1 px-3 py-1 bg-zinc-800 rounded-full text-sm">
-          <span className="text-zinc-300">Search: "{searchQuery}"</span>
+          <span className="text-zinc-300">Search: &quot;{searchQuery}&quot;</span>
           <button
             onClick={() => setSearchQuery('')}
             className="ml-1 text-zinc-500 hover:text-white"

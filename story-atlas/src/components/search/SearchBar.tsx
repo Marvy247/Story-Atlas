@@ -141,7 +141,7 @@ export default function SearchBar({ onSelectIP }: SearchBarProps) {
             </div>
           ) : debouncedQuery ? (
             <div className="py-8 text-center text-zinc-500">
-              <p>No results found for "{debouncedQuery}"</p>
+              <p>No results found for &quot;{debouncedQuery}&quot;</p>
               <p className="text-sm mt-1">Try searching by IP name or address</p>
             </div>
           ) : null}

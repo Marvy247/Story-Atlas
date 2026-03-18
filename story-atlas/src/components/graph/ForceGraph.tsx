@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { GraphData, GraphNode, GraphEdge } from '@/lib/story-protocol/types';
+import { GraphData, GraphNode } from '@/lib/story-protocol/types';
 import { useGraphStore } from '@/stores/graphStore';
 import { getNodeColor, getNodeSize } from '@/lib/graph/graph-builder';
 
@@ -23,58 +23,46 @@ interface ForceGraphProps {
 }
 
 export default function ForceGraph({ data, width = 800, height = 600 }: ForceGraphProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(null);
-  const { selectedNode, setSelectedNode, hoveredNode, setHoveredNode, highlightedNodes } = useGraphStore();
-  const [graphData, setGraphData] = useState<any>({
-    nodes: data.nodes,
-    links: data.edges,
-  });
+  const { selectedNode, setSelectedNode, setHoveredNode, highlightedNodes } = useGraphStore();
 
-  useEffect(() => {
-    // Transform edges to links for react-force-graph
-    setGraphData({
-      nodes: data.nodes,
-      links: data.edges,
-    });
-  }, [data]);
+  const graphData = { nodes: data.nodes, links: data.edges };
 
   // Handle node click
-  const handleNodeClick = (node: any) => {
-    setSelectedNode(node as GraphNode);
+  const handleNodeClick = (node: GraphNode) => {
+    setSelectedNode(node);
     
-    // Highlight connected nodes
     const connectedNodeIds = new Set<string>();
     connectedNodeIds.add(node.id);
     
-    // Add parent and child nodes
     data.edges.forEach(edge => {
-      if (edge.source === node.id) {
-        connectedNodeIds.add(typeof edge.target === 'string' ? edge.target : (edge.target as any).id);
-      }
-      if (edge.target === node.id) {
-        connectedNodeIds.add(typeof edge.source === 'string' ? edge.source : (edge.source as any).id);
-      }
+      const src = typeof edge.source === 'string' ? edge.source : (edge.source as GraphNode).id;
+      const tgt = typeof edge.target === 'string' ? edge.target : (edge.target as GraphNode).id;
+      if (src === node.id) connectedNodeIds.add(tgt);
+      if (tgt === node.id) connectedNodeIds.add(src);
     });
     
     useGraphStore.setState({ highlightedNodes: connectedNodeIds });
   };
 
   // Handle node hover
-  const handleNodeHover = (node: any) => {
-    setHoveredNode(node as GraphNode | null);
+  const handleNodeHover = (node: GraphNode | null) => {
+    setHoveredNode(node);
   };
 
   // Node canvas rendering
-  const nodeCanvasObject = (node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+  const nodeCanvasObject = (node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const label = node.name;
     const fontSize = 12 / globalScale;
     const nodeSize = getNodeSize(node);
     const isHighlighted = highlightedNodes.has(node.id);
     const isSelected = selectedNode?.id === node.id;
+    const x = node.x ?? 0;
+    const y = node.y ?? 0;
 
-    // Draw node circle
     ctx.beginPath();
-    ctx.arc(node.x, node.y, nodeSize, 0, 2 * Math.PI);
+    ctx.arc(x, y, nodeSize, 0, 2 * Math.PI);
     ctx.fillStyle = getNodeColor(node);
     ctx.fill();
 
@@ -91,12 +79,12 @@ export default function ForceGraph({ data, width = 800, height = 600 }: ForceGra
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(label, node.x, node.y + nodeSize + fontSize);
+      ctx.fillText(label, x, y + nodeSize + fontSize);
     }
   };
 
   // Link rendering
-  const linkCanvasObject = (link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+  const linkCanvasObject = (link: { source: string | GraphNode; target: string | GraphNode; royaltyShare?: number }, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const sourceId = typeof link.source === 'string' ? link.source : link.source.id;
     const targetId = typeof link.target === 'string' ? link.target : link.target.id;
     const isHighlighted = highlightedNodes.has(sourceId) && highlightedNodes.has(targetId);
@@ -106,21 +94,25 @@ export default function ForceGraph({ data, width = 800, height = 600 }: ForceGra
     ctx.lineWidth = (isHighlighted ? 2 : 1) / globalScale;
 
     // Draw link
-    const sourceNode = typeof link.source === 'string' ? null : link.source;
-    const targetNode = typeof link.target === 'string' ? null : link.target;
+    const sourceNode = typeof link.source === 'string' ? null : link.source as GraphNode;
+    const targetNode = typeof link.target === 'string' ? null : link.target as GraphNode;
 
     if (sourceNode && targetNode) {
+      const sx = sourceNode.x ?? 0;
+      const sy = sourceNode.y ?? 0;
+      const tx = targetNode.x ?? 0;
+      const ty = targetNode.y ?? 0;
+
       ctx.beginPath();
-      ctx.moveTo(sourceNode.x, sourceNode.y);
-      ctx.lineTo(targetNode.x, targetNode.y);
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(tx, ty);
       ctx.stroke();
 
-      // Draw arrow
       if (globalScale > 0.7) {
         const arrowLength = 10 / globalScale;
-        const angle = Math.atan2(targetNode.y - sourceNode.y, targetNode.x - sourceNode.x);
-        const arrowX = targetNode.x - Math.cos(angle) * (getNodeSize(targetNode) + 2);
-        const arrowY = targetNode.y - Math.sin(angle) * (getNodeSize(targetNode) + 2);
+        const angle = Math.atan2(ty - sy, tx - sx);
+        const arrowX = tx - Math.cos(angle) * (getNodeSize(targetNode) + 2);
+        const arrowY = ty - Math.sin(angle) * (getNodeSize(targetNode) + 2);
 
         ctx.beginPath();
         ctx.moveTo(arrowX, arrowY);
@@ -155,10 +147,14 @@ export default function ForceGraph({ data, width = 800, height = 600 }: ForceGra
           width={width}
           height={height}
           backgroundColor="#09090b"
-          nodeCanvasObject={nodeCanvasObject}
-          linkCanvasObject={linkCanvasObject}
-          onNodeClick={handleNodeClick}
-          onNodeHover={handleNodeHover}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          nodeCanvasObject={nodeCanvasObject as any}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          linkCanvasObject={linkCanvasObject as any}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onNodeClick={handleNodeClick as any}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onNodeHover={handleNodeHover as any}
           onBackgroundClick={() => {
             setSelectedNode(null);
             useGraphStore.setState({ highlightedNodes: new Set() });

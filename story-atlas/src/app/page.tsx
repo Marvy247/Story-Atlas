@@ -23,6 +23,8 @@ import { motion } from 'framer-motion';
 import { fadeIn } from '@/lib/animations';
 import { buildIPTree } from '@/lib/graph/tree-builder';
 
+const INITIAL_NOW = Math.floor(Date.now() / 1000);
+
 export default function Home() {
   const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
   const filters = useFilterStore();
@@ -37,7 +39,7 @@ export default function Home() {
   
   // Date range for time travel
   const dateRange = useMemo(() => {
-    if (assets.length === 0) return { min: Date.now() / 1000, max: Date.now() / 1000 };
+    if (assets.length === 0) return { min: INITIAL_NOW, max: INITIAL_NOW };
     const timestamps = assets.map(a => a.blockTimestamp);
     return {
       min: Math.min(...timestamps),
@@ -45,7 +47,8 @@ export default function Home() {
     };
   }, [assets]);
   
-  const [currentDate, setCurrentDate] = useState(dateRange.max);
+  const [currentDateOverride, setCurrentDateOverride] = useState<number | null>(null);
+  const currentDate = currentDateOverride ?? dateRange.max;
 
   // Update dimensions on mount and window resize
   useEffect(() => {
@@ -61,10 +64,7 @@ export default function Home() {
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
   
-  // Update current date when date range changes
-  useEffect(() => {
-    setCurrentDate(dateRange.max);
-  }, [dateRange.max]);
+  // Update current date when date range changes — removed (currentDate derived from dateRange.max)
   
   // Filter graph data by time travel date
   const filteredByDate = useMemo(() => {
@@ -237,7 +237,7 @@ export default function Home() {
                 minDate={dateRange.min}
                 maxDate={dateRange.max}
                 currentDate={currentDate}
-                onDateChange={setCurrentDate}
+                onDateChange={setCurrentDateOverride}
               />
             )}
             
