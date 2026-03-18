@@ -21,6 +21,7 @@ export async function fetchFromStoryAPI(endpoint: string, options?: RequestInit)
   const url = `${STORY_API_BASE_URL}${endpoint}`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'X-Chain': 'story',
     ...(options?.headers as Record<string, string>),
   };
 
