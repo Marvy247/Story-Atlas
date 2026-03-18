@@ -111,7 +111,7 @@ export default function NetworkInsights({ graphData }: NetworkInsightsProps) {
       variants={fadeInDown}
       initial="hidden"
       animate="visible"
-      className="absolute top-4 left-1/2 -translate-x-1/2 z-10 w-max max-w-[calc(100vw-8rem)]"
+      className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 w-max max-w-[calc(100vw-8rem)]"
     >
       {/* Toggle pill */}
       <button

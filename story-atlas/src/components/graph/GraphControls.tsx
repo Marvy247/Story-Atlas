@@ -71,8 +71,8 @@ export default function GraphControls({
         className="bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800"
         title="Export Graph Data"
       >
-        <Download className="h-4 w-4 mr-2" />
-        Export JSON
+        <Download className="h-4 w-4" />
+        <span className="hidden sm:inline ml-1.5">Export JSON</span>
       </Button>
     </div>
   );

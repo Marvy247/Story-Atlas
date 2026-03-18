@@ -39,6 +39,12 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
   const mousePos = useRef({ x: 0, y: 0 });
   const [showZoomHint, setShowZoomHint] = useState(true);
 
+  // Auto-dismiss zoom hint after 4s
+  useEffect(() => {
+    const t = setTimeout(() => setShowZoomHint(false), 4000);
+    return () => clearTimeout(t);
+  }, []);
+
   // Keep external ref in sync every render
   useEffect(() => {
     if (externalRef && fgRef.current) {
@@ -273,11 +279,11 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
             </div>
           )}
 
-          {/* Zoom hint — fades out after first scroll/pinch */}
+          {/* Zoom hint — top-center, fades after 4s or first scroll/pinch */}
           {showZoomHint && (
-            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 pointer-events-none animate-pulse">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900/90 border border-zinc-700 rounded-full text-xs text-zinc-400 backdrop-blur-sm whitespace-nowrap">
-                <span className="text-base">🔍</span>
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900/90 border border-zinc-700 rounded-full text-xs text-zinc-400 backdrop-blur-sm whitespace-nowrap animate-pulse">
+                <span>🔍</span>
                 Scroll or pinch to zoom
               </div>
             </div>
