@@ -200,6 +200,7 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
   return (
     <div
       className="relative w-full h-full bg-zinc-950 rounded-lg overflow-hidden border border-zinc-800"
+      style={{ cursor: tooltip ? 'pointer' : 'default' }}
       onMouseMove={(e) => {
         if (tooltip) setTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null);
       }}
@@ -218,6 +219,14 @@ export default function ForceGraph({ data, width = 800, height = 600, fgRef: ext
             backgroundColor="#09090b"
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             nodeCanvasObject={nodeCanvasObject as any}
+            // Tell the library the hit area for hover/click detection
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            nodePointerAreaPaint={(node: any, color: string, ctx: CanvasRenderingContext2D) => {
+              ctx.fillStyle = color;
+              ctx.beginPath();
+              ctx.arc(node.x ?? 0, node.y ?? 0, getNodeSize(node as GraphNode) + 2, 0, 2 * Math.PI);
+              ctx.fill();
+            }}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             linkCanvasObject={linkCanvasObject as any}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
