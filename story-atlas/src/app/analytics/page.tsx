@@ -78,7 +78,7 @@ export default function AnalyticsPage() {
       <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-6 py-4 flex items-center gap-4">
           <Button variant="ghost" size="sm" asChild className="text-zinc-400 hover:text-white">
-            <Link href="/"><ArrowLeft className="h-4 w-4 mr-2" />Back to Graph</Link>
+            <Link href="/graph"><ArrowLeft className="h-4 w-4 mr-2" />Back to Graph</Link>
           </Button>
           <div className="h-6 w-px bg-zinc-800" />
           <div className="flex items-center gap-2">

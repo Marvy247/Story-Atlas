@@ -1,299 +1,374 @@
 'use client';
 
-import { useGraphData } from '@/lib/hooks/useGraphData';
-import { useGraphStore } from '@/stores/graphStore';
-import { useFilterStore } from '@/stores/filterStore';
-import { useIPAssets } from '@/lib/hooks/useIPAssets';
-import ForceGraph from '@/components/graph/ForceGraph';
-import NodeDetails from '@/components/graph/NodeDetails';
-import GraphControls from '@/components/graph/GraphControls';
-import LegendPanel from '@/components/graph/LegendPanel';
-import GraphStats from '@/components/graph/GraphStats';
-import GenealogyTree from '@/components/graph/GenealogyTree';
-import TimeTravelSlider from '@/components/graph/TimeTravelSlider';
-import NetworkInsights from '@/components/graph/NetworkInsights';
-import SearchBar from '@/components/search/SearchBar';
-import FilterPanel from '@/components/search/FilterPanel';
-import ActiveFilters from '@/components/search/ActiveFilters';
-import { useEffect, useState, useMemo, useRef } from 'react';
-import { BarChart3, GitBranch, Clock } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { motion, useScroll, useTransform, type Variants } from 'framer-motion';
+import { ArrowRight, BarChart3, GitBranch, Search, Zap, Globe, Shield, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
-import { fadeIn } from '@/lib/animations';
-import { buildIPTree } from '@/lib/graph/tree-builder';
 
-const INITIAL_NOW = Math.floor(Date.now() / 1000);
+const FEATURES = [
+  {
+    icon: Globe,
+    title: 'Live Mainnet Data',
+    desc: 'Visualizes all 5.6M+ IP assets on Story Protocol mainnet in real time.',
+    color: 'text-blue-400',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/20',
+  },
+  {
+    icon: GitBranch,
+    title: 'Derivative Chains',
+    desc: 'Trace the full lineage of any IP — see every remix, fork, and derivative relationship.',
+    color: 'text-purple-400',
+    bg: 'bg-purple-500/10',
+    border: 'border-purple-500/20',
+  },
+  {
+    icon: Search,
+    title: 'Smart Search & Filter',
+    desc: 'Find any IP by name, filter by license type, media type, or commercial status.',
+    color: 'text-cyan-400',
+    bg: 'bg-cyan-500/10',
+    border: 'border-cyan-500/20',
+  },
+  {
+    icon: BarChart3,
+    title: 'Analytics Dashboard',
+    desc: 'License distribution, trending IPs, creator stats, and IP creation over time.',
+    color: 'text-green-400',
+    bg: 'bg-green-500/10',
+    border: 'border-green-500/20',
+  },
+  {
+    icon: Zap,
+    title: 'Force-Directed Graph',
+    desc: 'D3-powered physics simulation — nodes cluster by relationship, zoom and pan freely.',
+    color: 'text-amber-400',
+    bg: 'bg-amber-500/10',
+    border: 'border-amber-500/20',
+  },
+  {
+    icon: Shield,
+    title: 'Open Source',
+    desc: 'Fully open source, MIT licensed. Built for the Story Protocol developer community.',
+    color: 'text-pink-400',
+    bg: 'bg-pink-500/10',
+    border: 'border-pink-500/20',
+  },
+];
 
-export default function Home() {
-  const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
-  // Select only primitives from filter store — prevents useGraphData recomputing on every render
-  const searchQuery = useFilterStore(s => s.searchQuery);
-  const licenseTypes = useFilterStore(s => s.licenseTypes);
-  const mediaTypes = useFilterStore(s => s.mediaTypes);
-  const commercialOnly = useFilterStore(s => s.commercialOnly);
-  const hasDerivatives = useFilterStore(s => s.hasDerivatives);
-  const filters = useMemo(
-    () => ({ searchQuery, licenseTypes, mediaTypes, commercialOnly, hasDerivatives }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [searchQuery, licenseTypes?.join(','), mediaTypes?.join(','), commercialOnly, hasDerivatives]
-  );
-  const { assets, hasMore, loadMore } = useIPAssets();
-  const { graphData, metrics, isLoading, isError } = useGraphData(filters);
-  const { selectedNode } = useGraphStore();
-  const fgRef = useRef<{ centerAt: (x: number, y: number, ms: number) => void; zoom: (k: number, ms: number) => void } | null>(null);
+const NODE_COLORS = [
+  { label: 'Commercial Remix', color: '#22c55e' },
+  { label: 'Commercial Only', color: '#3b82f6' },
+  { label: 'Non-Commercial Remix', color: '#f97316' },
+  { label: 'Attribution Only', color: '#a855f7' },
+  { label: 'No License', color: '#71717a' },
+];
 
-  // Escape key to deselect node
+function GraphBackground() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        useGraphStore.setState({ selectedNode: null, highlightedNodes: new Set() });
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const colors = ['#22c55e', '#3b82f6', '#f97316', '#a855f7', '#71717a', '#06b6d4'];
+    const nodes = Array.from({ length: 55 }, (_, i) => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      r: Math.random() * 5 + 3,
+      color: colors[i % colors.length],
+    }));
+
+    let raf: number;
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 130) {
+            ctx.beginPath();
+            ctx.moveTo(nodes[i].x, nodes[i].y);
+            ctx.lineTo(nodes[j].x, nodes[j].y);
+            ctx.strokeStyle = `rgba(255,255,255,${0.04 * (1 - dist / 130)})`;
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+          }
+        }
       }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
-  
-  // Phase 5A: Advanced Features State
-  const [showGenealogyTree, setShowGenealogyTree] = useState(false);
-  const [showTimeTravel, setShowTimeTravel] = useState(false);
-  const [selectedTreeIp, setSelectedTreeIp] = useState<string | null>(null);
-  
-  // Date range for time travel
-  const dateRange = useMemo(() => {
-    const timestamps = assets.map(a => a.blockTimestamp).filter((t): t is number => !!t);
-    if (!timestamps.length) return { min: INITIAL_NOW, max: INITIAL_NOW };
-    return { min: Math.min(...timestamps), max: Math.max(...timestamps) };
-  }, [assets]);
-  
-  const [currentDateOverride, setCurrentDateOverride] = useState<number | null>(null);
-  const currentDate = currentDateOverride ?? dateRange.max;
-
-  // Update dimensions on mount and window resize
-  useEffect(() => {
-    const updateDimensions = () => {
-      setDimensions({
-        width: window.innerWidth,
-        height: window.innerHeight - 100,
+      nodes.forEach(n => {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+        ctx.fillStyle = n.color + '44';
+        ctx.fill();
+        ctx.strokeStyle = n.color + '99';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        n.x += n.vx;
+        n.y += n.vy;
+        if (n.x < 0 || n.x > canvas.width) n.vx *= -1;
+        if (n.y < 0 || n.y > canvas.height) n.vy *= -1;
       });
+      raf = requestAnimationFrame(draw);
     };
+    draw();
 
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, []);
-  
-  // Update current date when date range changes — removed (currentDate derived from dateRange.max)
-  
-  // Filter graph data by time travel date — returns same reference when time travel is off
-  const filteredByDate = useMemo(() => {
-    if (!showTimeTravel) return graphData;
-    const filteredNodes = graphData.nodes.filter(node => node.timestamp <= currentDate);
-    const nodeIds = new Set(filteredNodes.map(n => n.id));
-    return {
-      nodes: filteredNodes,
-      edges: graphData.edges.filter(e => nodeIds.has(e.source as string) && nodeIds.has(e.target as string)),
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', resize);
     };
-  }, [graphData, currentDate, showTimeTravel]);
+  }, []);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
+}
+
+const stagger: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.1 } },
+};
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } as object },
+};
+
+export default function LandingPage() {
+  const { scrollYProgress } = useScroll();
+  const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -60]);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
-      {/* Header */}
-      <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                Story Atlas
-              </h1>
-              <p className="text-sm text-zinc-400 mt-1">
-                Interactive IP Relationship Explorer
-              </p>
+    <div className="min-h-screen bg-zinc-950 text-white overflow-x-hidden">
+
+      {/* Nav */}
+      <nav className="fixed top-0 inset-x-0 z-50 border-b border-white/5 bg-zinc-950/80 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <GitBranch className="w-4 h-4 text-white" />
             </div>
-            <div className="flex items-center gap-6">
-              {!isLoading && (
-                <div className="flex gap-6 text-sm">
-                  <div>
-                    <span className="text-zinc-500">IPs: </span>
-                    <span className="font-semibold">{metrics.totalNodes}</span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-500">Connections: </span>
-                    <span className="font-semibold">{metrics.totalEdges}</span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-500">Isolated: </span>
-                    <span className="font-semibold">{metrics.isolatedNodes}</span>
-                  </div>
-                </div>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowTimeTravel(!showTimeTravel)}
-                className="bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-white"
-              >
-                <Clock className="h-4 w-4 mr-2" />
-                {showTimeTravel ? 'Hide' : 'Time Travel'}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (selectedNode) {
-                    setSelectedTreeIp(selectedNode.ipId);
-                    setShowGenealogyTree(true);
-                  }
-                }}
-                disabled={!selectedNode}
-                className="bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-white disabled:opacity-50"
-              >
-                <GitBranch className="h-4 w-4 mr-2" />
-                Genealogy
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                asChild
-                className="bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-white"
-              >
-                <Link href="/analytics">
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Analytics
-                </Link>
-              </Button>
-            </div>
+            <span className="font-bold text-lg tracking-tight">Story Atlas</span>
           </div>
-          
-          {/* Search and Filter Bar */}
           <div className="flex items-center gap-3">
-            <SearchBar 
-              onSelectIP={(ipId) => {
-                const node = graphData.nodes.find(n => n.ipId === ipId);
-                if (node) {
-                  useGraphStore.setState({ selectedNode: node });
-                  // Zoom to node
-                  if (fgRef.current && node.x != null && node.y != null) {
-                    fgRef.current.centerAt(node.x, node.y, 600);
-                    fgRef.current.zoom(4, 600);
-                  }
-                }
-              }}
-            />
-            <FilterPanel />
+            <Button variant="ghost" size="sm" asChild className="text-zinc-400 hover:text-white">
+              <Link href="/analytics">Analytics</Link>
+            </Button>
+            <Button size="sm" asChild className="bg-blue-600 hover:bg-blue-500 text-white">
+              <Link href="/graph">Launch App <ArrowRight className="ml-1.5 w-3.5 h-3.5" /></Link>
+            </Button>
           </div>
         </div>
+      </nav>
 
-        {/* Active Filters */}
-        <ActiveFilters />
-      </header>
+      {/* Hero */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <GraphBackground />
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(59,130,246,0.08) 0%, transparent 70%)' }} />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-zinc-950 pointer-events-none" />
 
-      {/* Main Content */}
-      <main className="relative">
-        {isLoading ? (
-          <motion.div 
-            className="flex items-center justify-center h-screen"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
-            <div className="text-center space-y-4">
-              {/* Skeleton graph */}
-              <div className="relative w-64 h-64 mx-auto">
-                {[
-                  { size: 20, left: '10%', top: '10%' },
-                  { size: 28, left: '45%', top: '10%' },
-                  { size: 22, left: '80%', top: '10%' },
-                  { size: 18, left: '10%', top: '55%' },
-                  { size: 24, left: '45%', top: '55%' },
-                  { size: 30, left: '80%', top: '55%' },
-                ].map((dot, i) => (
-                  <div
-                    key={i}
-                    className="absolute rounded-full bg-zinc-800 animate-pulse"
-                    style={{
-                      width: `${dot.size}px`,
-                      height: `${dot.size}px`,
-                      left: dot.left,
-                      top: dot.top,
-                      animationDelay: `${i * 0.15}s`,
-                    }}
-                  />
-                ))}
-                {/* Skeleton edges */}
-                <svg className="absolute inset-0 w-full h-full opacity-20">
-                  <line x1="20%" y1="25%" x2="55%" y2="25%" stroke="#52525b" strokeWidth="1" />
-                  <line x1="55%" y1="25%" x2="90%" y2="25%" stroke="#52525b" strokeWidth="1" />
-                  <line x1="20%" y1="70%" x2="55%" y2="25%" stroke="#52525b" strokeWidth="1" />
-                  <line x1="90%" y1="70%" x2="55%" y2="25%" stroke="#52525b" strokeWidth="1" />
-                </svg>
-              </div>
-              <p className="text-zinc-400 text-sm animate-pulse">Loading IP assets from Story Protocol...</p>
-            </div>
+        <motion.div
+          className="relative z-10 text-center max-w-4xl mx-auto px-6"
+          style={{ y: heroY }}
+          variants={stagger}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300 text-xs font-medium mb-8">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+            Live on Story Protocol Mainnet
           </motion.div>
-        ) : isError ? (
-          <div className="flex items-center justify-center h-screen">
-            <div className="text-center max-w-md">
-              <p className="text-red-400 text-lg mb-2">Failed to load data</p>
-              <p className="text-zinc-500 text-sm">
-                Please check your connection or try again later
-              </p>
-            </div>
-          </div>
-        ) : (
-          <motion.div 
-            className="relative"
-            variants={fadeIn}
+
+          <motion.h1 variants={fadeUp} className="text-5xl sm:text-7xl font-extrabold tracking-tight mb-6 leading-[1.05]">
+            Explore the{' '}
+            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+              IP Universe
+            </span>
+          </motion.h1>
+
+          <motion.p variants={fadeUp} className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+            Story Atlas visualizes every IP asset, derivative chain, and licensing relationship
+            on Story Protocol as a living, interactive graph.
+          </motion.p>
+
+          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button size="lg" asChild className="bg-blue-600 hover:bg-blue-500 text-white px-8 h-12 text-base font-semibold shadow-lg shadow-blue-500/20">
+              <Link href="/graph">Explore the Graph <ArrowRight className="ml-2 w-4 h-4" /></Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild className="border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-500 px-8 h-12 text-base">
+              <Link href="/analytics">View Analytics</Link>
+            </Button>
+          </motion.div>
+
+          <motion.div variants={fadeUp} className="mt-16 flex flex-wrap items-center justify-center gap-10 text-center">
+            {[
+              { value: '5.6M+', label: 'IP Assets' },
+              { value: 'Mainnet', label: 'Story Protocol' },
+              { value: 'Real-time', label: 'Live Data' },
+              { value: 'Open Source', label: 'MIT License' },
+            ].map(s => (
+              <div key={s.label}>
+                <div className="text-2xl font-bold text-white">{s.value}</div>
+                <div className="text-xs text-zinc-500 mt-0.5">{s.label}</div>
+              </div>
+            ))}
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 text-zinc-600"
+          animate={{ y: [0, 6, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <ChevronDown className="w-5 h-5" />
+        </motion.div>
+      </section>
+
+      {/* Features */}
+      <section className="relative py-28 px-6">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            className="text-center mb-16"
+            variants={stagger}
             initial="hidden"
-            animate="visible"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-80px' }}
           >
-            <ForceGraph 
-              data={filteredByDate} 
-              width={dimensions.width}
-              height={dimensions.height}
-              fgRef={fgRef}
-            />
-            <NetworkInsights graphData={filteredByDate} />
-            <LegendPanel />
-            <GraphStats metrics={metrics} />
-            <GraphControls graphData={graphData} />
-            {selectedNode && <NodeDetails node={selectedNode} />}
-
-            {/* Load More */}
-            {hasMore && (
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
-                <Button
-                  size="sm"
-                  onClick={loadMore}
-                  className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white shadow-lg"
-                >
-                  Load More IPs ({assets.length} loaded)
-                </Button>
-              </div>
-            )}
-            
-            {/* Phase 5A: Time Travel Slider */}
-            {showTimeTravel && (
-              <TimeTravelSlider
-                minDate={dateRange.min}
-                maxDate={dateRange.max}
-                currentDate={currentDate}
-                onDateChange={setCurrentDateOverride}
-              />
-            )}
-            
-            {/* Phase 5A: Genealogy Tree Modal */}
-            {showGenealogyTree && selectedTreeIp && (
-              <GenealogyTree
-                tree={buildIPTree(selectedTreeIp, assets) || { 
-                  id: '', name: '', ipId: '', depth: 0, derivativeCount: 0, 
-                  licenseType: '', timestamp: 0 
-                }}
-                onClose={() => setShowGenealogyTree(false)}
-              />
-            )}
+            <motion.p variants={fadeUp} className="text-blue-400 text-sm font-semibold uppercase tracking-widest mb-3">Features</motion.p>
+            <motion.h2 variants={fadeUp} className="text-4xl font-bold tracking-tight">Everything you need to explore IP</motion.h2>
           </motion.div>
-        )}
-      </main>
+
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+          >
+            {FEATURES.map(f => (
+              <motion.div
+                key={f.title}
+                variants={fadeUp}
+                className={`rounded-xl border ${f.border} ${f.bg} p-6 hover:scale-[1.02] transition-transform duration-200`}
+              >
+                <div className={`w-10 h-10 rounded-lg ${f.bg} border ${f.border} flex items-center justify-center mb-4`}>
+                  <f.icon className={`w-5 h-5 ${f.color}`} />
+                </div>
+                <h3 className="font-semibold text-white mb-2">{f.title}</h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">{f.desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="py-24 px-6 border-t border-zinc-800/60">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center"
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+          >
+            <div>
+              <motion.p variants={fadeUp} className="text-purple-400 text-sm font-semibold uppercase tracking-widest mb-3">How it works</motion.p>
+              <motion.h2 variants={fadeUp} className="text-4xl font-bold tracking-tight mb-6">
+                Every node tells a story
+              </motion.h2>
+              <motion.p variants={fadeUp} className="text-zinc-400 leading-relaxed mb-8">
+                Each circle is an IP asset. Its color shows the license type. Its size reflects how many derivatives it has spawned. Edges connect parent IPs to their remixes — follow the chain to trace creative lineage across the entire ecosystem.
+              </motion.p>
+              <motion.div variants={fadeUp} className="space-y-3">
+                {NODE_COLORS.map(n => (
+                  <div key={n.label} className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: n.color }} />
+                    <span className="text-sm text-zinc-300">{n.label}</span>
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+
+            <motion.div
+              variants={fadeUp}
+              className="relative h-72 rounded-2xl border border-zinc-800 bg-zinc-900/60 overflow-hidden"
+            >
+              <GraphBackground />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Link href="/graph">
+                  <motion.div
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-950/80 border border-zinc-700 text-sm font-medium text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors backdrop-blur-sm cursor-pointer"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <ArrowRight className="w-4 h-4" /> Open full graph
+                  </motion.div>
+                </Link>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-28 px-6">
+        <motion.div
+          className="max-w-3xl mx-auto text-center"
+          variants={stagger}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-60px' }}
+        >
+          <motion.div
+            variants={fadeUp}
+            className="relative rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950 p-12 overflow-hidden"
+          >
+            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
+            <motion.h2 variants={fadeUp} className="text-4xl font-bold tracking-tight mb-4">
+              Start exploring now
+            </motion.h2>
+            <motion.p variants={fadeUp} className="text-zinc-400 mb-8 text-lg">
+              No wallet. No sign-up. Just the full Story Protocol IP graph, live.
+            </motion.p>
+            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button size="lg" asChild className="bg-blue-600 hover:bg-blue-500 text-white px-10 h-12 text-base font-semibold shadow-lg shadow-blue-500/20">
+                <Link href="/graph">Launch Story Atlas <ArrowRight className="ml-2 w-4 h-4" /></Link>
+              </Button>
+              <Button size="lg" variant="ghost" asChild className="text-zinc-400 hover:text-white h-12 text-base">
+                <a href="https://github.com/storyprotocol" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+              </Button>
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-zinc-800/60 py-8 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-zinc-500">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <GitBranch className="w-3 h-3 text-white" />
+            </div>
+            <span>Story Atlas — Built for Story Protocol</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <Link href="/graph" className="hover:text-zinc-300 transition-colors">Graph</Link>
+            <Link href="/analytics" className="hover:text-zinc-300 transition-colors">Analytics</Link>
+            <a href="https://docs.story.foundation" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300 transition-colors">Docs</a>
+            <span>MIT License</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -1,0 +1,299 @@
+'use client';
+
+import { useGraphData } from '@/lib/hooks/useGraphData';
+import { useGraphStore } from '@/stores/graphStore';
+import { useFilterStore } from '@/stores/filterStore';
+import { useIPAssets } from '@/lib/hooks/useIPAssets';
+import ForceGraph from '@/components/graph/ForceGraph';
+import NodeDetails from '@/components/graph/NodeDetails';
+import GraphControls from '@/components/graph/GraphControls';
+import LegendPanel from '@/components/graph/LegendPanel';
+import GraphStats from '@/components/graph/GraphStats';
+import GenealogyTree from '@/components/graph/GenealogyTree';
+import TimeTravelSlider from '@/components/graph/TimeTravelSlider';
+import NetworkInsights from '@/components/graph/NetworkInsights';
+import SearchBar from '@/components/search/SearchBar';
+import FilterPanel from '@/components/search/FilterPanel';
+import ActiveFilters from '@/components/search/ActiveFilters';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { BarChart3, GitBranch, Clock } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
+import { fadeIn } from '@/lib/animations';
+import { buildIPTree } from '@/lib/graph/tree-builder';
+
+const INITIAL_NOW = Math.floor(Date.now() / 1000);
+
+export default function Home() {
+  const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
+  // Select only primitives from filter store — prevents useGraphData recomputing on every render
+  const searchQuery = useFilterStore(s => s.searchQuery);
+  const licenseTypes = useFilterStore(s => s.licenseTypes);
+  const mediaTypes = useFilterStore(s => s.mediaTypes);
+  const commercialOnly = useFilterStore(s => s.commercialOnly);
+  const hasDerivatives = useFilterStore(s => s.hasDerivatives);
+  const filters = useMemo(
+    () => ({ searchQuery, licenseTypes, mediaTypes, commercialOnly, hasDerivatives }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [searchQuery, licenseTypes?.join(','), mediaTypes?.join(','), commercialOnly, hasDerivatives]
+  );
+  const { assets, hasMore, loadMore } = useIPAssets();
+  const { graphData, metrics, isLoading, isError } = useGraphData(filters);
+  const { selectedNode } = useGraphStore();
+  const fgRef = useRef<{ centerAt: (x: number, y: number, ms: number) => void; zoom: (k: number, ms: number) => void } | null>(null);
+
+  // Escape key to deselect node
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        useGraphStore.setState({ selectedNode: null, highlightedNodes: new Set() });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  
+  // Phase 5A: Advanced Features State
+  const [showGenealogyTree, setShowGenealogyTree] = useState(false);
+  const [showTimeTravel, setShowTimeTravel] = useState(false);
+  const [selectedTreeIp, setSelectedTreeIp] = useState<string | null>(null);
+  
+  // Date range for time travel
+  const dateRange = useMemo(() => {
+    const timestamps = assets.map(a => a.blockTimestamp).filter((t): t is number => !!t);
+    if (!timestamps.length) return { min: INITIAL_NOW, max: INITIAL_NOW };
+    return { min: Math.min(...timestamps), max: Math.max(...timestamps) };
+  }, [assets]);
+  
+  const [currentDateOverride, setCurrentDateOverride] = useState<number | null>(null);
+  const currentDate = currentDateOverride ?? dateRange.max;
+
+  // Update dimensions on mount and window resize
+  useEffect(() => {
+    const updateDimensions = () => {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight - 100,
+      });
+    };
+
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
+  
+  // Update current date when date range changes — removed (currentDate derived from dateRange.max)
+  
+  // Filter graph data by time travel date — returns same reference when time travel is off
+  const filteredByDate = useMemo(() => {
+    if (!showTimeTravel) return graphData;
+    const filteredNodes = graphData.nodes.filter(node => node.timestamp <= currentDate);
+    const nodeIds = new Set(filteredNodes.map(n => n.id));
+    return {
+      nodes: filteredNodes,
+      edges: graphData.edges.filter(e => nodeIds.has(e.source as string) && nodeIds.has(e.target as string)),
+    };
+  }, [graphData, currentDate, showTimeTravel]);
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-white">
+      {/* Header */}
+      <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-40">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                Story Atlas
+              </h1>
+              <p className="text-sm text-zinc-400 mt-1">
+                Interactive IP Relationship Explorer
+              </p>
+            </div>
+            <div className="flex items-center gap-6">
+              {!isLoading && (
+                <div className="flex gap-6 text-sm">
+                  <div>
+                    <span className="text-zinc-500">IPs: </span>
+                    <span className="font-semibold">{metrics.totalNodes}</span>
+                  </div>
+                  <div>
+                    <span className="text-zinc-500">Connections: </span>
+                    <span className="font-semibold">{metrics.totalEdges}</span>
+                  </div>
+                  <div>
+                    <span className="text-zinc-500">Isolated: </span>
+                    <span className="font-semibold">{metrics.isolatedNodes}</span>
+                  </div>
+                </div>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTimeTravel(!showTimeTravel)}
+                className="bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-white"
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                {showTimeTravel ? 'Hide' : 'Time Travel'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (selectedNode) {
+                    setSelectedTreeIp(selectedNode.ipId);
+                    setShowGenealogyTree(true);
+                  }
+                }}
+                disabled={!selectedNode}
+                className="bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-white disabled:opacity-50"
+              >
+                <GitBranch className="h-4 w-4 mr-2" />
+                Genealogy
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="bg-zinc-800 hover:bg-zinc-700 border-zinc-700 text-white"
+              >
+                <Link href="/analytics">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Analytics
+                </Link>
+              </Button>
+            </div>
+          </div>
+          
+          {/* Search and Filter Bar */}
+          <div className="flex items-center gap-3">
+            <SearchBar 
+              onSelectIP={(ipId) => {
+                const node = graphData.nodes.find(n => n.ipId === ipId);
+                if (node) {
+                  useGraphStore.setState({ selectedNode: node });
+                  // Zoom to node
+                  if (fgRef.current && node.x != null && node.y != null) {
+                    fgRef.current.centerAt(node.x, node.y, 600);
+                    fgRef.current.zoom(4, 600);
+                  }
+                }
+              }}
+            />
+            <FilterPanel />
+          </div>
+        </div>
+
+        {/* Active Filters */}
+        <ActiveFilters />
+      </header>
+
+      {/* Main Content */}
+      <main className="relative">
+        {isLoading ? (
+          <motion.div 
+            className="flex items-center justify-center h-screen"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <div className="text-center space-y-4">
+              {/* Skeleton graph */}
+              <div className="relative w-64 h-64 mx-auto">
+                {[
+                  { size: 20, left: '10%', top: '10%' },
+                  { size: 28, left: '45%', top: '10%' },
+                  { size: 22, left: '80%', top: '10%' },
+                  { size: 18, left: '10%', top: '55%' },
+                  { size: 24, left: '45%', top: '55%' },
+                  { size: 30, left: '80%', top: '55%' },
+                ].map((dot, i) => (
+                  <div
+                    key={i}
+                    className="absolute rounded-full bg-zinc-800 animate-pulse"
+                    style={{
+                      width: `${dot.size}px`,
+                      height: `${dot.size}px`,
+                      left: dot.left,
+                      top: dot.top,
+                      animationDelay: `${i * 0.15}s`,
+                    }}
+                  />
+                ))}
+                {/* Skeleton edges */}
+                <svg className="absolute inset-0 w-full h-full opacity-20">
+                  <line x1="20%" y1="25%" x2="55%" y2="25%" stroke="#52525b" strokeWidth="1" />
+                  <line x1="55%" y1="25%" x2="90%" y2="25%" stroke="#52525b" strokeWidth="1" />
+                  <line x1="20%" y1="70%" x2="55%" y2="25%" stroke="#52525b" strokeWidth="1" />
+                  <line x1="90%" y1="70%" x2="55%" y2="25%" stroke="#52525b" strokeWidth="1" />
+                </svg>
+              </div>
+              <p className="text-zinc-400 text-sm animate-pulse">Loading IP assets from Story Protocol...</p>
+            </div>
+          </motion.div>
+        ) : isError ? (
+          <div className="flex items-center justify-center h-screen">
+            <div className="text-center max-w-md">
+              <p className="text-red-400 text-lg mb-2">Failed to load data</p>
+              <p className="text-zinc-500 text-sm">
+                Please check your connection or try again later
+              </p>
+            </div>
+          </div>
+        ) : (
+          <motion.div 
+            className="relative"
+            variants={fadeIn}
+            initial="hidden"
+            animate="visible"
+          >
+            <ForceGraph 
+              data={filteredByDate} 
+              width={dimensions.width}
+              height={dimensions.height}
+              fgRef={fgRef}
+            />
+            <NetworkInsights graphData={filteredByDate} />
+            <LegendPanel />
+            <GraphStats metrics={metrics} />
+            <GraphControls graphData={graphData} />
+            {selectedNode && <NodeDetails node={selectedNode} />}
+
+            {/* Load More */}
+            {hasMore && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
+                <Button
+                  size="sm"
+                  onClick={loadMore}
+                  className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white shadow-lg"
+                >
+                  Load More IPs ({assets.length} loaded)
+                </Button>
+              </div>
+            )}
+            
+            {/* Phase 5A: Time Travel Slider */}
+            {showTimeTravel && (
+              <TimeTravelSlider
+                minDate={dateRange.min}
+                maxDate={dateRange.max}
+                currentDate={currentDate}
+                onDateChange={setCurrentDateOverride}
+              />
+            )}
+            
+            {/* Phase 5A: Genealogy Tree Modal */}
+            {showGenealogyTree && selectedTreeIp && (
+              <GenealogyTree
+                tree={buildIPTree(selectedTreeIp, assets) || { 
+                  id: '', name: '', ipId: '', depth: 0, derivativeCount: 0, 
+                  licenseType: '', timestamp: 0 
+                }}
+                onClose={() => setShowGenealogyTree(false)}
+              />
+            )}
+          </motion.div>
+        )}
+      </main>
+    </div>
+  );
+}
